@@ -30,8 +30,8 @@ simulate_binary <- function(
   
   # 3)) Generate datasets given the binomial model 
   # calculate Linear Predictor and Probabilities
-  df <- dat |> tibble () %>%
-    mutate(
+  df <- dat |> tibble::tibble() %>%
+    dplyr::mutate(
     # Map random effects to rows
     # u_i = object_effects[Object_ID],
     # v_j = rater_effects[Rater_ID],
@@ -165,8 +165,8 @@ simulate_ordinal <- function(
   
   # 3)) Generate datasets given the binomial model 
   # calculate Linear Predictor and Probabilities
-  df <- dat |> tibble () %>%
-    mutate(
+  df <- dat |> tibble::tibble () %>%
+    dplyr::mutate(
     # Map random effects to rows
     # u_i = object_effects[Object_ID],
     # v_j = rater_effects[Rater_ID],

@@ -246,7 +246,7 @@ prep_data_cat <- function(.data,
   out <- list()
 
   # Ensure df is a tibble
-  df <- as_tibble(.data)
+  df <- tibble::as_tibble(.data)
 
   # Select the important variables
   df <- dplyr::select(df, {{object}}, {{rater}}, {{score}})

@@ -31,11 +31,11 @@ generate_data_ROR<- function(n_raters,n_objects,
     RaterID= 1:n_raters
   )
  # Generate scores 
-  data <- dat %>% tibble %>%
-    mutate(
+  data <- dat %>% tibble::tibble() %>%
+    dplyr::mutate(
       u_i = obj_effects[ObjectID], #object effect
       v_j = rater_effects[RaterID], #rater effect
-      Error = rnorm(n(), mean=0, sd = sqrt(sigma_sqr$var_residual)),
+      Error = rnorm(dplyr::n(), mean=0, sd = sqrt(sigma_sqr$var_residual)),
       OBJ_VAR = sigma_sqr$var_object,
       RATER_VAR = sigma_sqr$var_rater, 
       RES_VAR = sigma_sqr$var_residual, 
