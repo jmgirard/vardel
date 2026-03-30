@@ -1521,10 +1521,10 @@ model_fit <- safe_ordinal(
   #seedNum <-.data$Seed[1]
 
   out <- list(
-    g_icc = iccs,
-    g_message = message,
-    g_warning = warning, 
-    g_error = error
+    aov_icc = iccs,
+    aov_message = message,
+    aov_warning = warning, 
+    aov_error = error
     #SeedNum = seedNum
   )
   #attr(out, "seed")

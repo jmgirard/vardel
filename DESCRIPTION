@@ -1,6 +1,6 @@
 Package: vardel
 Title: The Quick ICC(A,1) Simulation Package
-Version: 0.0.7.01
+Version: 0.0.7.02
 Authors@R: 
     person("Aaron", "Simmons", , "amsimmons@ku.edu", role = c("aut", "cre"))
     person("Jeffrey", "Girard", ,"jmgirard@ku.edu", role = c("cre"))
