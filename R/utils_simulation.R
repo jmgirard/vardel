@@ -194,7 +194,7 @@ simulate_ordinal <- function(
 
 
 
-#custom binary simulation driver 
+#custom ordinal simulation driver 
 ordinal_sim <- function(n_raters, n_objects, target_icc, k_category, 
   e_category, seed,filename, reps, writeFiles){
     #set seed on each iteration
@@ -239,6 +239,64 @@ ordinal_sim <- function(n_raters, n_objects, target_icc, k_category,
 #' @export
 run_all_ordinal <- function(P, iter, writeFiles){
   res <- furrr::future_pmap(P, ordinal_sim, reps=iter, writeFiles=writeFiles,
+      .progress = TRUE,
+    .options = furrr::furrr_options(seed = NULL,
+   packages = "vardel"))
+  
+  params$result <- res
+  return(params)
+}
+
+
+##########################################
+# ANOVA SIMULATIONS
+##########################################
+
+#custom ordinal ANOVA simulation driver 
+ordinal_AOV_sim <- function(n_raters, n_objects, target_icc, k_category, 
+  e_category, seed,filename, reps, writeFiles){
+    #set seed on each iteration
+    set.seed(seed, kind = "L'Ecuyer-CMRG", 
+    normal.kind = "Inversion", sample.kind = "Rejection") #parallel
+
+    res <- simhelpers::repeat_and_stack(reps, {
+
+
+      #DGP 
+      dat <- simulate_ordinal(n_raters, n_objects, target_icc,
+       k_category, e_category)
+
+      #Analyze 
+
+      aov_icc <- calc_aov_icc(dat)
+      # g_icc <- calc_g_ordinal_icc(dat)
+      # caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
+
+
+      #combined_mat <- c(t_icc,g_icc,caa)
+
+
+    }, stack = TRUE) 
+
+  
+  if(writeFiles == TRUE){
+     #w_res <- as.data.frame(res)
+     #write_csv(w_res,file = file.path(filename))
+    saveRDS(res, file = file.path(filename))
+  }
+  return(res)
+  
+
+}
+
+
+
+#' @param P Parameter grid
+#' @param Iter Int; # of repetitions per condition
+#' @return ICCs
+#' @export
+run_ANOVA_ordinal <- function(P, iter, writeFiles){
+  res <- furrr::future_pmap(P, ordinal_AOV_sim, reps=iter, writeFiles=writeFiles,
       .progress = TRUE,
     .options = furrr::furrr_options(seed = NULL,
    packages = "vardel"))

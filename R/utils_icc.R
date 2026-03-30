@@ -103,7 +103,7 @@ create_parseaov <- function(.data, subject, rater, scores, v){
   # TODO: Check that everything works when scores contain weird characters
   twoway <- is_twoway(.data, subject, rater)
   if (twoway && v == 1) {
-    formula <- paste0("(",scores," ~ ",subject, " + ", rater, ")")
+    formula <- paste0("",scores," ~ ",subject, " + ", rater, "")
 
   } else if (!twoway && v == 1) {
     formula <- paste0("(",scores," ~ ",subject, ")")
@@ -1334,6 +1334,181 @@ calc_g_ordinal_icc <- function(.data,
     #   colnames(iccs),
     #   sep = "__"
     # )
+    message = length(model_fit$message)>0 
+    warning = length(model_fit$warning)>0  
+    error = FALSE
+
+  }
+  
+  
+  
+  #out <- iccs #ICC(A,1)
+  #seedNum <-.data$Seed[1]
+
+  out <- list(
+    g_icc = iccs,
+    g_message = message,
+    g_warning = warning, 
+    g_error = error
+    #SeedNum = seedNum
+  )
+  #attr(out, "seed")
+
+  return(out)
+}
+
+
+#' @param .data dataframe
+#' @param subject char
+#' @param rater char
+#' @param scores Int [0-inf]
+#' @param k int (number of raters for ICC(A,1))
+#' @return variances/effects
+#' @export
+calc_aov_icc <- function(.data,
+  subject = "ObjectID",
+  rater = "RaterID",
+  scores = "Score",
+  k = NULL
+ # ci = 0.95
+  #varde = matrix(),
+  ){
+
+  assertthat::assert_that(
+    rlang::is_null(k) || rlang::is_integerish(k, n = 1)
+  )
+
+  # assertthat::assert_that(
+  #   rlang::is_double(ci, n = 1, finite = TRUE),
+  #   ci > 0, ci < 1
+  # )
+  # assertthat::assert_that(
+  #   rlang::is_integerish(chains, n = 1, finite = TRUE),
+  #   chains >= 1
+  # )
+  
+  #make score as a factor
+  .data$Score <- as.factor(.data$Score)
+
+  # How many score variables were provided?
+  v <- length(scores)
+
+  # Create logical subject-rater matrices
+  srm <- lapply(
+    X = scores,
+    FUN = create_srm,
+    .data = .data,
+    subject = subject,
+    rater = rater
+  )
+  names(srm) <- scores
+
+  # Count the number of raters who scored each subject
+  ks <- lapply(X = srm, FUN = rowSums)
+
+  # Count the number of subjects scored by each rater
+  nk <- lapply(X = srm, FUN = colSums)
+
+  # # Remove all subjects that had no raters
+  keep <- lapply(ks, function(x) names(x[x > 0])) |>
+    unlist() |>
+    unique()
+  .data <- .data[.data[[subject]] %in% keep, ]
+
+  # # Remove all raters that had no subjects
+  keep <- lapply(nk, function(x) names(x[x > 0])) |>
+    unlist() |>
+    unique()
+  .data <- .data[.data[[rater]] %in% keep, ]
+
+  #check design of data
+  balanced <- is_balanced(.data, subject,rater)
+  complete <- is_complete(.data, subject,rater)
+  twoway <- is_twoway(.data, subject, rater)
+
+
+  # If not specified, set k as the number of unique raters
+  if (is.null(k)) {
+    k <- length(unique(.data[[rater]]))
+  }
+
+  # Calculate the harmonic mean of the number of raters per subject
+  khat <- lapply(srm, calc_khat)
+
+  # Calculate the proportion of non-overlap for raters and subjects
+  q <- lapply(srm, calc_q)
+
+  if(twoway == FALSE){
+      q <- 1/k #since sigmaR cannot be distinguished
+    } 
+
+  # Construct mixed-effects formula
+  formula <- create_parseaov(.data, subject, rater, scores, v)
+  
+
+  # model_fit <- lme4::lmer(formula = formula,
+  #                   data = .data,
+  #                 REML=TRUE)
+
+## fit anova model as fixed ("what most people do")
+.data$Score <- as.numeric(.data$Score)
+  
+# attempt to do it by hand  
+  # dat <- .data |> # make wide
+  #   select(c(ObjectID,RaterID,Score)) |> 
+  #   pivot_wider(names_from = RaterID, values_from = Score) |> 
+  #   select(!ObjectID)
+
+  # Sum of squared deviations for COLUMNS
+#col_rater_ssd <- sum(apply(dat2, 2, function(x) sum((x - mean(x))^2)))
+
+# Sum of squared deviations for ROWS
+#row_object_ssd <- sum(apply(dat2, 1, function(x) sum((x - mean(x))^2)))
+
+
+  
+safe_ordinal <- purrr::quietly(purrr::possibly(lm, otherwise = NULL))
+
+model_fit <- safe_ordinal(
+    formula = formula,
+    data = .data
+  )
+
+
+  if ( is.null(model_fit$result ) ) {
+  # we had an error!
+    iccs = NULL
+    message = length(model_fit$message) > 0
+    warning = length(model_fit$warning) > 0
+    error = TRUE
+  } else {
+    #  icc_est <- computeICC_random(fit, subject, k, khat, q, v)
+    #iccs_CIs <- ICC_CIs_LME(fit, subject, rater, ci, k, khat, q)
+    #obtain confidence intervals of ICCs
+    ## TODO: What if one way model fit?
+
+    # In vardel, we will not calculate CIs by simulation:
+    # instead we will use ggdist() to estimate them
+    #level <- ci
+
+    #index lme4 model
+    model_fitted <- model_fit$result
+
+    khat <- khat$Score
+    Q <- q$Score
+
+    #extract MS rows and columns
+    
+    aov_mod <- as.data.frame(anova(model_fitted))
+
+    MSr <- aov_mod["RaterID",]$`Mean Sq` #MeanSq Rater
+    MSo <- aov_mod["ObjectID",]$`Mean Sq` #MeanSq Object
+    MSe <- aov_mod["Residuals",]$`Mean Sq` #MeanSq Error
+    n_objects <-  max(.data$ObjectID)
+
+    #only interested in ICC(A,1) #McGraw & Wong (1996)
+   iccs <- signif(( (MSr-MSe) / (MSr + (khat-1)*MSe + (khat/n_objects)*(MSo - MSe))), digits = 3)
+
     message = length(model_fit$message)>0 
     warning = length(model_fit$warning)>0  
     error = FALSE
