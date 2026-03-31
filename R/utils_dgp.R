@@ -31,7 +31,7 @@ generate_data_ROR<- function(n_raters,n_objects,
     RaterID= 1:n_raters
   )
  # Generate scores 
-  data <- dat %>% tibble::tibble() %>%
+  data <- dat |> tibble::tibble() |>
     dplyr::mutate(
       u_i = obj_effects[ObjectID], #object effect
       v_j = rater_effects[RaterID], #rater effect

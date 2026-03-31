@@ -1,3 +1,107 @@
+#################################
+# LINEAR SIMULATIONS
+# Useful to test against generalized/mixed models
+#################################
+
+#' @param n_raters Number of Raters
+#' @param n_objects Number of Objets
+#' @param target_icc ICC [0,1]
+#' @return data
+#' @export
+simulate_linear <- function(n_raters = 30,
+  n_objects= 100,
+  target_icc = 0.5) {
+  
+  # Scenario A: Noise is mostly random error (Rater Variance is low)
+  # Ratio 0.2 means: Rater Var is 5x less than Object Variance
+   ROR <- 0.20
+  
+  # 2) First, obtain (object and rater) random effects 
+  # must be fully crossed.
+  
+  
+  dat <- generate_data_ROR(n_raters,n_objects,
+    target_icc, ROR)
+  
+  # 3)) Generate datasets given the binomial model 
+  # calculate Linear Predictor and Probabilities
+  df <- dat |> tibble::tibble() |> 
+    dplyr::mutate(
+    # Map random effects to rows
+    # u_i = object_effects[Object_ID],
+    # v_j = rater_effects[Rater_ID],
+    
+    # Linear Predictor (probit scale)
+    Score = u_i + v_j + Error, # raw score 
+    
+    #Score = ifelse(eta > 0 , 1, 0) #threshold on latent scale 
+
+    #Score = eta
+    #Seed = SEED
+  )
+
+  return(df)
+
+
+
+
+}
+
+#custom binary simulation driver 
+linear_sim <- function(n_raters, n_objects, target_icc,
+  seed,filename, reps, writeFiles){
+    #set seed on each iteration
+    set.seed(seed, kind = "L'Ecuyer-CMRG", 
+    normal.kind = "Inversion", sample.kind = "Rejection") #parallel
+
+    res <- simhelpers::repeat_and_stack(reps, {
+
+
+      #DGP 
+      dat <- simulate_linear(n_raters, n_objects, target_icc)
+
+      #Analyze 
+
+      aov_icc <- calc_aov_icc(dat)
+
+
+    }, stack = TRUE) 
+
+  
+  if(writeFiles == TRUE){
+     #w_res <- as.data.frame(res)
+     #write_csv(w_res,file = file.path(filename))
+    saveRDS(res, file = file.path(filename))
+  }
+  return(res)
+  
+
+}
+
+
+
+
+#' @param P Parameter grid
+#' @param Iter Int; # of repetitions per condition
+#' @return ICCs
+#' @export
+run_all_AOVlinear <- function(P, iter, writeFiles){
+  res <- furrr::future_pmap(P, linear_sim, reps=iter, writeFiles=writeFiles,
+      .progress = TRUE,
+    .options = furrr::furrr_options(seed = NULL,
+   packages = "vardel"))
+  
+  params$result <- res
+  return(params)
+}
+
+
+
+#################################
+# Binary Simulations 
+#################################
+
+
 #' @param n_raters Number of Raters
 #' @param n_objects Number of Objets
 #' @param target_icc ICC [0,1]
@@ -30,7 +134,7 @@ simulate_binary <- function(
   
   # 3)) Generate datasets given the binomial model 
   # calculate Linear Predictor and Probabilities
-  df <- dat |> tibble::tibble() %>%
+  df <- dat |> tibble::tibble() |>
     dplyr::mutate(
     # Map random effects to rows
     # u_i = object_effects[Object_ID],
@@ -165,7 +269,7 @@ simulate_ordinal <- function(
   
   # 3)) Generate datasets given the binomial model 
   # calculate Linear Predictor and Probabilities
-  df <- dat |> tibble::tibble () %>%
+  df <- dat |> tibble::tibble () |> 
     dplyr::mutate(
     # Map random effects to rows
     # u_i = object_effects[Object_ID],
