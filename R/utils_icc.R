@@ -1388,7 +1388,7 @@ calc_aov_icc <- function(.data,
   # )
   
   #make score as a factor
-  .data$Score <- as.factor(.data$Score)
+  #.data$Score <- as.factor(.data$Score)
 
   # How many score variables were provided?
   v <- length(scores)
@@ -1452,6 +1452,8 @@ calc_aov_icc <- function(.data,
 
 ## fit anova model as fixed ("what most people do")
 .data$Score <- as.numeric(.data$Score)
+.data$ObjectID <- as.factor(.data$ObjectID)
+.data$RaterID <- as.factor(.data$RaterID)
   
 # attempt to do it by hand  
   # dat <- .data |> # make wide
@@ -1504,10 +1506,10 @@ model_fit <- safe_ordinal(
     MSr <- aov_mod["RaterID",]$`Mean Sq` #MeanSq Rater
     MSo <- aov_mod["ObjectID",]$`Mean Sq` #MeanSq Object
     MSe <- aov_mod["Residuals",]$`Mean Sq` #MeanSq Error
-    n_objects <-  max(.data$ObjectID)
+    n_objects <-  unique(nk[[1]])
 
     #only interested in ICC(A,1) #McGraw & Wong (1996)
-   iccs <- signif(( (MSr-MSe) / (MSr + (khat-1)*MSe + (khat/n_objects)*(MSo - MSe))), digits = 3)
+    iccs <- signif(( (MSr-MSe) / (MSr + ((khat-1)*MSe) + ((khat/n_objects)*(MSo - MSe)))), digits = 3)
 
     message = length(model_fit$message)>0 
     warning = length(model_fit$warning)>0  
