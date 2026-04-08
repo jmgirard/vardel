@@ -408,3 +408,59 @@ run_ANOVA_ordinal <- function(P, iter, writeFiles){
   params$result <- res
   return(params)
 }
+
+
+
+#custom binary simulation driver 
+binary_AOV_sim <- function(n_raters, n_objects, target_icc, p, 
+  seed,filename, reps, writeFiles){
+    #set seed on each iteration
+    set.seed(seed, kind = "L'Ecuyer-CMRG", 
+    normal.kind = "Inversion", sample.kind = "Rejection") #parallel
+
+    res <- simhelpers::repeat_and_stack(reps, {
+
+
+      #DGP 
+      dat <- simulate_binary(n_raters, n_objects, target_icc, p)
+
+      #Analyze 
+
+      # t_icc <- calc_vardel_icc(dat)
+      # g_icc <- calc_g_icc(dat)
+      # caa <- cat_vardel_adjusted(dat)
+
+      # combined_mat <- c(t_icc,g_icc,caa)
+
+       aov_icc <- calc_aov_icc(dat)
+
+
+    }, stack = TRUE) 
+
+  
+  if(writeFiles == TRUE){
+     #w_res <- as.data.frame(res)
+     #write_csv(w_res,file = file.path(filename))
+    saveRDS(res, file = file.path(filename))
+  }
+  return(res)
+  
+
+}
+
+
+
+
+#' @param P Parameter grid
+#' @param Iter Int; # of repetitions per condition
+#' @return ICCs
+#' @export
+run_ANOVA_binary <- function(P, iter, writeFiles){
+  res <- furrr::future_pmap(P, binary_AOV_sim, reps=iter, writeFiles=writeFiles,
+      .progress = TRUE,
+    .options = furrr::furrr_options(seed = NULL,
+   packages = "vardel"))
+  
+  params$result <- res
+  return(params)
+}

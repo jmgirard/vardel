@@ -1470,6 +1470,7 @@ calc_aov_icc <- function(.data,
 
   
 safe_ordinal <- purrr::quietly(purrr::possibly(lm, otherwise = NULL))
+#works for binary and ordinal...
 
 model_fit <- safe_ordinal(
     formula = formula,
