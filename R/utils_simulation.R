@@ -1,6 +1,5 @@
 #################################
-# LINEAR SIMULATIONS
-# Useful to test against generalized/mixed models
+# LINEAR SIMULATIONS 
 #################################
 
 #' @param n_raters Number of Raters
