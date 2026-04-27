@@ -97,7 +97,7 @@ cat_vardel_adjusted <- function(.data,
   # Validate inputs
   assertthat::assert_that(is.data.frame(.data) || is.matrix(.data))
   approach <- match.arg(approach, several.ok = TRUE)
-  assertthat::assert_that(is_null(categories) || is_vector(categories))
+  assertthat::assert_that(rlang::is_null(categories) || is_vector(categories))
   #weighting <- match.arg(weighting)
   assertthat::assert_that(
     is.null(agreement) ||
@@ -224,6 +224,7 @@ cat_vardel_adjusted <- function(.data,
 
   res_caa <- tibble::tibble(
     method = "kappa",
+    icc_names = NA,
     estimate = signif(kap, digits = 3),
     sigma_s = NA,
     sigma_r = NA,
@@ -237,7 +238,8 @@ cat_vardel_adjusted <- function(.data,
 
 
   ) |> dplyr::add_row(
-    method = "s_bp", 
+    method = "s_bp",
+    icc_names = NA, 
     estimate = signif(sbp, digits = 3),
     sigma_s = NA,
     sigma_r = NA,
