@@ -43,7 +43,7 @@ the reliability of (see details below). (default = \code{NULL})}
 \item{method}{A function (ideally from \code{\link[ggdist:point_interval]{ggdist::point_interval()}}) that
 returns a data frame containing a point estimate (\code{y}) and the lower
 (\code{ymin}) and upper (\code{ymax}) bounds of an interval estimate. (default =
-\code{\link[ggdist:point_interval]{ggdist::mode_qi()}})}
+\code{\link[ggdist:mode_qi]{ggdist::mode_qi()}})}
 
 \item{engine}{A character vector indicating the choice of estimation
 framework (\code{"LME"}, or \code{"BRMS"}). (default = "\code{"BRMS"})}

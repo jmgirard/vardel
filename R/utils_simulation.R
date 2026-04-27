@@ -90,8 +90,8 @@ run_all_AOVlinear <- function(P, iter, writeFiles){
     .options = furrr::furrr_options(seed = NULL,
    packages = "vardel"))
   
-  params$result <- res
-  return(params)
+  P$result <- res
+  return(P)
 }
 
 
@@ -209,8 +209,8 @@ run_all_binary <- function(P, iter, writeFiles){
     .options = furrr::furrr_options(seed = NULL,
    packages = "vardel"))
   
-  params$result <- res
-  return(params)
+  P$result <- res
+  return(P)
 }
 
 ##########################################
@@ -346,8 +346,8 @@ run_all_ordinal <- function(P, iter, writeFiles){
     .options = furrr::furrr_options(seed = NULL,
    packages = "vardel"))
   
-  params$result <- res
-  return(params)
+  P$result <- res
+  return(P)
 }
 
 
@@ -404,8 +404,8 @@ run_ANOVA_ordinal <- function(P, iter, writeFiles){
     .options = furrr::furrr_options(seed = NULL,
    packages = "vardel"))
   
-  params$result <- res
-  return(params)
+  P$result <- res
+  return(P)
 }
 
 
@@ -460,6 +460,6 @@ run_ANOVA_binary <- function(P, iter, writeFiles){
     .options = furrr::furrr_options(seed = NULL,
    packages = "vardel"))
   
-  params$result <- res
-  return(params)
+  P$result <- res
+  return(P)
 }
