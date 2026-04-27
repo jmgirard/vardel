@@ -299,7 +299,7 @@ simulate_ordinal <- function(
 
 #custom ordinal simulation driver 
 ordinal_sim <- function(n_raters, n_objects, target_icc, k_category, 
-  e_category, seed,filename, reps, writeFiles){
+  e_category, seed, condition, filename, reps, writeFiles){
     #set seed on each iteration
     set.seed(seed, kind = "L'Ecuyer-CMRG", 
     normal.kind = "Inversion", sample.kind = "Rejection") #parallel
@@ -317,7 +317,7 @@ ordinal_sim <- function(n_raters, n_objects, target_icc, k_category,
       g_icc <- calc_g_ordinal_icc(dat)
       caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
 
-      combined_mat <- c(t_icc,g_icc,caa)
+      combined_mat <- dplyr::bind_rows(t_icc,g_icc,caa)
 
 
     }, stack = TRUE) 

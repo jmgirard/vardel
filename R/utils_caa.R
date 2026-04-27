@@ -222,10 +222,34 @@ cat_vardel_adjusted <- function(.data,
   kap <- boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)][1]
   sbp <- boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)][2]
 
-  res_caa <- list(
-    kappa = signif(kap, digits = 3), 
-    s_bp = signif(sbp, digits = 3)
+  res_caa <- tibble::tibble(
+    method = "kappa",
+    estimate = signif(kap, digits = 3),
+    sigma_s = NA,
+    sigma_r = NA,
+    sigma_vsr = NA,  
+    vs = NA,
+    vr = NA,
+    vsr = NA,   
+    message = "",
+    warning = "",
+    error = ""
+
+
+  ) |> dplyr::add_row(
+    method = "s_bp", 
+    estimate = signif(sbp, digits = 3),
+    sigma_s = NA,
+    sigma_r = NA,
+    sigma_vsr = NA,  
+    vs = NA,
+    vr = NA,
+    vsr = NA,   
+    message = "",
+    warning = "",
+    error = ""
   )
+
   return(res_caa)
 }
 
