@@ -219,12 +219,21 @@ cat_vardel_adjusted <- function(.data,
   #   call = match.call()
   # )
 
-  kap <- boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)][1]
-  sbp <- boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)][2]
+  #observed, expected, adjusted 
+
+  observed = boot_results$t0[seq(from = 1, to = length(approach) * 3, by = 3)]
+  expected = boot_results$t0[seq(from = 2, to = length(approach) * 3, by = 3)]
+  adjusted = boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)]
+
+  kap <- c(observed[1], expected[1], adjusted[1]) #observed, expected, adjusted
+  sbp <- c(observed[1], expected[1], adjusted[1]) #observed, expected, adjusted
+
+  #kap <- boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)]
+ # sbp <- boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)][2]
 
   res_caa <- tibble::tibble(
-    method = "kappa",
-    icc_names = NA,
+    method = c("kappa_obs", "kappa_exp", "kappa_adj"),
+    icc = NA,
     estimate = signif(kap, digits = 3),
     sigma_s = NA,
     sigma_r = NA,
@@ -238,8 +247,8 @@ cat_vardel_adjusted <- function(.data,
 
 
   ) |> dplyr::add_row(
-    method = "s_bp",
-    icc_names = NA, 
+    method = c("s_bp_obs", "s_bp_exp", "s_bp_adj"),
+    icc = NA, 
     estimate = signif(sbp, digits = 3),
     sigma_s = NA,
     sigma_r = NA,
