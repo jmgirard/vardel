@@ -547,6 +547,9 @@ calc_vardel_icc <- function(.data,
   if ( is.null(model_fit$result ) ) {
   # we had an error!
     iccs = NULL
+    vs = NULL 
+    vr = NULL
+    vsr = NULL
     message = length(model_fit$message) > 0
     warning = length(model_fit$warning) > 0
     error = TRUE
@@ -735,6 +738,9 @@ calc_g_binary_icc <- function(.data,
   if ( is.null(model_fit$result ) ) {
   # we had an error!
     iccs = NULL
+    vs = NULL
+    vr = NULL
+    vsr = NULL
     message = length(model_fit$message) > 0
     warning = length(model_fit$warning) > 0
     error = TRUE
@@ -927,6 +933,9 @@ calc_g_ordinal_icc <- function(.data,
   if ( is.null(model_fit$result ) ) {
   # we had an error!
     iccs = NULL
+    vs = NULL
+    vr = NULL
+    vsr = NULL
     message = length(model_fit$message) > 0
     warning = length(model_fit$warning) > 0
     error = TRUE
@@ -1133,6 +1142,9 @@ model_fit <- safe_aov(
   if ( is.null(model_fit$result ) ) {
   # we had an error!
     iccs = NULL
+    vs = NULL
+    vr = NULL
+    vsr = NULL
     message = length(model_fit$message) > 0
     warning = length(model_fit$warning) > 0
     error = TRUE
