@@ -154,13 +154,13 @@ cat_vardel_adjusted <- function(.data,
     if (warnings == TRUE) {
       warning("Only a single category was observed or requested. Returning NA.\nHint: Try setting the possible categories explicitly with the categories argument")
     }
-    return(out)
+    #return(out) why does this happen?
   }
   if (d$n_raters < 2) {
     if (warnings == TRUE) {
       warning("Only a single rater was observed. Returning NA.")
     }
-    return(out)
+    #return(out) why does this happen? 
   }
 
   # Create function to perform bootstrapping
@@ -220,6 +220,7 @@ cat_vardel_adjusted <- function(.data,
   # )
 
   #observed, expected, adjusted 
+
 
   observed = boot_results$t0[seq(from = 1, to = length(approach) * 3, by = 3)]
   expected = boot_results$t0[seq(from = 2, to = length(approach) * 3, by = 3)]
