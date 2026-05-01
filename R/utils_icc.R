@@ -840,6 +840,7 @@ calc_g_ordinal_icc <- function(.data,
   subject = "ObjectID",
   rater = "RaterID",
   scores = "Score",
+  icc_type = 1, 
   k = NULL
  # ci = 0.95
   #varde = matrix(),
@@ -997,6 +998,22 @@ calc_g_ordinal_icc <- function(.data,
   #seedNum <-.data$Seed[1]
   subject_var <- .data$OBJ_VAR[1]
   rater_var <- .data$RATER_VAR[1]
+
+  #select the correct ICC estimate given ICC type reflected in DGP 
+
+  if (icc_type == 1) {
+    iccs = iccs[1] #ICC(A,1)
+    icc_names = icc_names[1]
+  } else if (icc_type == 2){
+    iccs = iccs[2] #ICC(A,k)
+    icc_names = icc_names[2]
+  } else if (icc_type == 3){
+    iccs = iccs[3] #ICC(C,1)
+    icc_names = icc_names[3]
+  } else {
+    iccs = iccs[4] #ICC(C,K)
+    icc_names = icc_names[4]
+  }
 
   out <- tibble::tibble(
     method = "g_icc",

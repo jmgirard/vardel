@@ -149,11 +149,16 @@ simulate_binary <- function(
     #Score = rbinom(n(), 1, prob) #bernouli (don't do since not stochastic?)
 
     
-    Score = ifelse(eta > 0 , 1, 0) #threshold on latent scale 
+     #threshold on latent scale 
+
+    #Scorme = ifelse(quantileqnorm(0.5), 1, 0)
 
     #Score = eta
     #Seed = SEED
-  )
+  ) |> 
+    dplyr::mutate( 
+      Score = dplyr::if_else(eta <= quantile(eta, probs = p) , 0, 1) 
+    )
 
   return(df)
 
@@ -244,7 +249,8 @@ simulate_ordinal <- function(
   n_objects= 100,
   target_icc = 0.5,
   k_category = 3,
-  e_category = TRUE
+  e_category = TRUE,
+  icc_type = 1 #default to ICC(A,1)
 ){
   
   
@@ -261,13 +267,13 @@ simulate_ordinal <- function(
 
   # Scenario A: Noise is mostly random error (Rater Variance is low)
   # Ratio 0.2 means: Rater Var is 5x less than Object Variance
-   ROR <- 0.20
+   ROR <- 5
 
   # 2) First, obtain (object and rater) random effects 
   # must be fully crossed.
  
   dat <- generate_data_ROR(n_raters,n_objects,
-    target_icc, ROR)
+    target_icc, ROR, icc_type)
   
   # 3)) Generate datasets given the binomial model 
   # calculate Linear Predictor and Probabilities
@@ -302,7 +308,7 @@ simulate_ordinal <- function(
 
 #custom ordinal simulation driver 
 ordinal_sim <- function(n_raters, n_objects, target_icc, k_category, 
-  e_category, seed, condition, filename, reps, writeFiles){
+  e_category, icc_type, seed, condition, filename, reps, writeFiles){
     #set seed on each iteration
     set.seed(seed, kind = "L'Ecuyer-CMRG", 
     normal.kind = "Inversion", sample.kind = "Rejection") #parallel
@@ -312,12 +318,12 @@ ordinal_sim <- function(n_raters, n_objects, target_icc, k_category,
 
       #DGP 
       dat <- simulate_ordinal(n_raters, n_objects, target_icc,
-       k_category, e_category)
+       k_category, e_category, icc_type)
 
       #Analyze 
 
       t_icc <- calc_vardel_icc(dat)
-      g_icc <- calc_g_ordinal_icc(dat)
+      g_icc <- calc_g_ordinal_icc(dat,icc_type)
       caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
 
       combined_mat <- dplyr::bind_rows(t_icc,g_icc,caa)

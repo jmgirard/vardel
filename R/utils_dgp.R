@@ -6,10 +6,10 @@
 #' @return variances/effects
 #' @export
 generate_data_ROR<- function(n_raters,n_objects,
-  target_icc, ROR = 0.006){
+  target_icc, ROR = 0.006, icc_type = 1){
 
   # Obtain variances 
-  sigma_sqr <- get_data_ROR(target_icc, ROR)
+  sigma_sqr <- get_data_ROR(target_icc, ROR, n_raters, icc_type)
 
   # sigma_sqr <- list(
   #   var_object = 30,
@@ -95,7 +95,7 @@ get_data_ORE <- function(target_icc, ROR) {
 #' @param ROR rater object ratio: default 0.2 (i.e. Object Variance 5x greater than Rater Var)
 #' @return variances/effects
 #' @export
-get_data_ROR <- function(target_icc, ROR = 0.2) {
+get_data_ROR <- function(target_icc, ROR = 0.2, n_raters = 1, icc_type = 1) {
 
   #error check on ICC value 
     if(target_icc >= 1 | target_icc <=0) {
@@ -105,7 +105,20 @@ get_data_ROR <- function(target_icc, ROR = 0.2) {
   #Set variance parameter components
   var_error <- 1 # probit residual variance
   #formaula: ICC = O / (O + ROR + E)
-  var_object <- (target_icc * var_error) / (1-target_icc * (1 + ROR))
+  if (icc_type == 1) {
+    #utilize ICC(A,1) parameter formula
+    #var_object <- (target_icc * var_error) / (1-target_icc * (1 + ROR))
+    var_object <- (target_icc * ROR * var_error) / (ROR - (target_icc * (ROR+1)))
+  } else if (icc_type == 2){
+    #utilize ICC(A,K) parameter formula
+    var_object <- (target_icc * ROR * (var_error)) / (n_raters * ROR - target_icc * (n_raters*ROR +1))
+  } else if (icc_type == 3){
+    #utilize ICC(C,1) parameter formula
+    var_object <- (target_icc * var_error) / (1-target_icc)
+  } else {
+    #utilize ICC(C,K) parameter formula 
+    var_object <- (target_icc * var_error) / (n_raters * (1-target_icc))
+  }
 
 
   if (var_object <= 0) {
@@ -121,5 +134,5 @@ get_data_ROR <- function(target_icc, ROR = 0.2) {
     var_residual = var_error)
   
   return(out)
-}
+  }
 
