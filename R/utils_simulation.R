@@ -178,8 +178,9 @@ binary_sim <- function(n_raters, n_objects, target_icc, p,
       t_icc <- calc_vardel_icc(dat)
       g_icc <- calc_g_binary_icc(dat)
       caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
+      aov_icc <- calc_aov_icc(dat)
 
-      combined_mat <- dplyr::bind_rows(t_icc,g_icc,caa)
+      combined_mat <- dplyr::bind_rows(t_icc,g_icc,caa,aov_icc)
 
 
     }, stack = TRUE) 

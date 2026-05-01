@@ -770,8 +770,15 @@ calc_g_binary_icc <- function(.data,
 
 
   
-    #only interested in ICC(A,1)
-    iccs <- signif((vs / (vs + vr + vsr)), digits = 3)
+    iccs <- c(
+    vs / (vs + vr + vsr),
+    vs / (vs + (vr + vsr) / khat),
+    vs / (vs + vsr),
+    vs / (vs + vsr / khat)
+    )
+    
+    iccs <- sapply(iccs, signif, digits = 3
+    )
     
 
     message = length(model_fit$message)>0 
@@ -780,20 +787,34 @@ calc_g_binary_icc <- function(.data,
 
   }
   
-  
+  icc_names <- c(
+    "ICC(A,1)", "ICC(A,k)",
+    "ICC(C,1)", "ICC(C,k)"
+  )
   
   #out <- iccs #ICC(A,1)
   #seedNum <-.data$Seed[1]
 
-  out <- list(
-    g_icc = iccs,
-    g_message = message,
-    g_warning = warning, 
-    g_error = error
+  subject_var <- .data$OBJ_VAR[1]
+  rater_var <- .data$RATER_VAR[1]
+  resid_vsr <- .data$RES_VAR[1]
+
+  out <- tibble::tibble(
+    method = "g_icc",
+    icc = icc_names,
+    estimate = iccs,
+    sigma_s = subject_var,
+    sigma_r = rater_var,
+    sigma_vsr = resid_vsr,  
+    vs = vs,
+    vr = vr,
+    vsr = vsr,   
+    message = as.character(message),
+    warning = as.character(warning), 
+    error = as.character(error)
     #SeedNum = seedNum
   )
-  #attr(out, "seed")
-
+ 
   return(out)
 }
 
@@ -983,7 +1004,7 @@ calc_g_ordinal_icc <- function(.data,
     error = as.character(error)
     #SeedNum = seedNum
   )
-  #attr(out, "seed")
+  
 
   return(out)
 }
@@ -1100,10 +1121,10 @@ calc_aov_icc <- function(.data,
 
 
   
-safe_ordinal <- purrr::quietly(purrr::possibly(lm, otherwise = NULL))
+safe_aov <- purrr::quietly(purrr::possibly(lm, otherwise = NULL))
 #works for binary and ordinal...
 
-model_fit <- safe_ordinal(
+model_fit <- safe_aov(
     formula = formula,
     data = .data
   )
@@ -1141,7 +1162,18 @@ model_fit <- safe_ordinal(
     n_objects <-  unique(nk[[1]])
 
     #only interested in ICC(A,1) #McGraw & Wong (1996)
-    iccs <- signif(( (MSr-MSe) / (MSr + ((khat-1)*MSe) + ((khat/n_objects)*(MSo - MSe)))), digits = 3)
+    iccs_a1 <- (MSr-MSe) / (MSr + ((khat-1)*MSe) + 
+      ((khat/n_objects)*(MSo - MSe)))
+
+    iccs_ak <- (MSr-MSe) / (MSr + ((MSo - MSe)/khat)) 
+
+    iccs_c1 <- (MSr - MSe) / (MSr + ((khat -1)*MSe))
+
+    iccs_ck <- (MSr - MSe)/(MSr)
+
+
+    iccs <- c(iccs_a1, iccs_ak, iccs_c1, iccs_ck) 
+
 
     message = length(model_fit$message)>0 
     warning = length(model_fit$warning)>0  
@@ -1149,19 +1181,33 @@ model_fit <- safe_ordinal(
 
   }
   
+  icc_names <- c(
+    "ICC(A,1)", "ICC(A,k)",
+    "ICC(C,1)", "ICC(C,k)"
+  )
   
+  subject_var <- .data$OBJ_VAR[1]
+  rater_var <- .data$RATER_VAR[1]
+  resid_vsr <- .data$RES_VAR[1]
   
   #out <- iccs #ICC(A,1)
   #seedNum <-.data$Seed[1]
 
-  out <- list(
-    aov_icc = iccs,
-    aov_message = message,
-    aov_warning = warning, 
-    aov_error = error
+ out <- tibble::tibble(
+    method = "aov_icc",
+    icc = icc_names,
+    estimate = iccs,
+    sigma_s = subject_var,
+    sigma_r = rater_var,
+    sigma_vsr = resid_vsr,  
+    vs = MSo,
+    vr = MSr,
+    vsr = MSe,   
+    message = as.character(message),
+    warning = as.character(warning), 
+    error = as.character(error)
     #SeedNum = seedNum
   )
-  #attr(out, "seed")
 
   return(out)
 }
