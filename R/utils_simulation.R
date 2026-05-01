@@ -163,7 +163,7 @@ simulate_binary <- function(
 
 #custom binary simulation driver 
 binary_sim <- function(n_raters, n_objects, target_icc, p, 
-  seed,filename, reps, writeFiles){
+  seed, condition, filename, reps, writeFiles){
     #set seed on each iteration
     set.seed(seed, kind = "L'Ecuyer-CMRG", 
     normal.kind = "Inversion", sample.kind = "Rejection") #parallel
