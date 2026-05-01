@@ -4,7 +4,7 @@
 
 #' @param n_raters Number of Raters
 #' @param n_objects Number of Objets
-#' @param target_icc ICC [0,1]
+#' @param target_icc ICC 
 #' @return data
 #' @export
 simulate_linear <- function(n_raters = 30,
@@ -103,7 +103,7 @@ run_all_AOVlinear <- function(P, iter, writeFiles){
 
 #' @param n_raters Number of Raters
 #' @param n_objects Number of Objets
-#' @param target_icc ICC [0,1]
+#' @param target_icc ICC
 #' @param p probability
 #' @return data
 #' @export
@@ -231,7 +231,7 @@ get_decay_cuts <- function(k) {
 
 #' @param n_raters Number of Raters
 #' @param n_objects Number of Objets
-#' @param target_icc ICC [0,1]
+#' @param target_icc ICC 
 #' @param category Number of categories
 #' @param e_category Threshold equality (TRUE) or linear decay (FALSE)
 #' @return data

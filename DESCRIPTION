@@ -1,6 +1,6 @@
 Package: vardel
 Title: The Quick gICC Simulation Package with four ICCs
-Version: 0.1.0.5
+Version: 0.1.1.1
 Authors@R: 
     person("Aaron", "Simmons", , "amsimmons@ku.edu", role = c("aut", "cre"))
     person("Jeffrey", "Girard", ,"jmgirard@ku.edu", role = c("cre"))
