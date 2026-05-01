@@ -640,7 +640,7 @@ calc_vardel_icc <- function(.data,
 #' @param k int (number of raters for ICC(A,1))
 #' @return variances/effects
 #' @export
-calc_g_icc <- function(.data,
+calc_g_binary_icc <- function(.data,
   subject = "ObjectID",
   rater = "RaterID",
   scores = "Score",
