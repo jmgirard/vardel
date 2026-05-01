@@ -360,7 +360,7 @@ run_all_ordinal <- function(P, iter, writeFiles){
 
 #custom ordinal ANOVA simulation driver 
 ordinal_AOV_sim <- function(n_raters, n_objects, target_icc, k_category, 
-  e_category, seed,filename, reps, writeFiles){
+  e_category, seed, condition, filename, reps, writeFiles){
     #set seed on each iteration
     set.seed(seed, kind = "L'Ecuyer-CMRG", 
     normal.kind = "Inversion", sample.kind = "Rejection") #parallel
