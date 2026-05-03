@@ -1,15 +1,16 @@
 #' @param n_raters Int
 #' @param n_objects Int
 #' @param target_icc 0-1 inclusive
-#' @param fixed_obj_var default 1
-#' @param rater_resid_ratio default 0.2
+#' @param ORR object-to-rater ratio: As a general rule of thumb: Whenever you want 
+#' your true signal (object) to be $X$ times larger than your systematic bias (rater), 
+#' you just set $k_{ratio} = X$.(default 5) 
 #' @return variances/effects
 #' @export
-generate_data_ROR<- function(n_raters,n_objects,
-  target_icc, ROR = 0.006, icc_type = 1){
+generate_data_ORR<- function(n_raters,n_objects,
+  target_icc, ORR = 5, icc_type = 1){
 
   # Obtain variances 
-  sigma_sqr <- get_data_ROR(target_icc, ROR, n_raters, icc_type)
+  sigma_sqr <- get_data_ORR(target_icc, ORR, n_raters, icc_type)
 
   # sigma_sqr <- list(
   #   var_object = 30,
@@ -48,54 +49,22 @@ generate_data_ROR<- function(n_raters,n_objects,
   return(data)
 }
 
-# ' @param target_icc Int
-# ' @param fixed_obj_var default to 1
-# ' @param rater_resid_ratio default 0.2
-# ' @return variances/effects
-# ' @export
-get_data_ORE <- function(target_icc, ROR) {
 
-  #error check on ICC value 
-    if(target_icc >= 1 | target_icc <=0) {
-      stop("ICC must be between 0 and 1")
-    }
-  
-  
-  #calculate noise(combined rater and residual variance)
-  # TODO: CHANGE RATIO to OBJECT/RATER VARIANCE
-
- # total_noise <- fixed_obj_var * ((1/target_icc) - 1) 
-  
-  #total_var <- (target_icc/(1-target_icc)) + 1
-
-  #rho = sig2_obj/ (sig2_obj + sig2_rater + 1)
-  #sig2_obj = (rho * (sig2_rater+1)) / (1-rho)
-
-  var_object = (target_icc * (rater_resid_ratio + 1))/ (1-target_icc)
-  
-  #obtain rater variance as a function of ratio  
- # var_residual <- total_noise / (1 + rater_resid_ratio)
-
- # var_rater <- total_noise - var_residual
-
-  #return variances 
-  out <- list(
-    var_object = var_object, 
-    var_rater = rater_resid_ratio, 
-    var_residual = 1)
-  
-  return(out)
-}
 
 # This attempt at setting variance assumes fixed error variance of 1
-# and a ratio of object to ratio variance (ROR)
+# and a ratio of object to ratio variance (ORR) 
 # Default assumes no rater variance (perfect ICC)
+# As a general rule of thumb: Whenever you want your true 
+# signal (object) to be $X$ times larger than your systematic bias (rater), 
+# you just set $k_{ratio} = X$.
 
 #' @param target_icc Int
-#' @param ROR rater object ratio: default 0.2 (i.e. Object Variance 5x greater than Rater Var)
+#' @param ORR rater object ratio: default 5 (i.e. Object Variance 5x greater than Rater Var)
+#' @param n_rater number of raters
+#' @param icc_type ICC type
 #' @return variances/effects
 #' @export
-get_data_ROR <- function(target_icc, ROR = 0.2, n_raters = 1, icc_type = 1) {
+get_data_ORR <- function(target_icc, ORR = 5, n_raters = 1, icc_type = 1) {
 
   #error check on ICC value 
     if(target_icc >= 1 | target_icc <=0) {
@@ -104,14 +73,14 @@ get_data_ROR <- function(target_icc, ROR = 0.2, n_raters = 1, icc_type = 1) {
   
   #Set variance parameter components
   var_error <- 1 # probit residual variance
-  #formaula: ICC = O / (O + ROR + E)
+  #formaula: ICC = O / (O + ORR + E)
   if (icc_type == 1) {
     #utilize ICC(A,1) parameter formula
-    #var_object <- (target_icc * var_error) / (1-target_icc * (1 + ROR))
-    var_object <- (target_icc * ROR * var_error) / (ROR - (target_icc * (ROR+1)))
+    #var_object <- (target_icc * var_error) / (1-target_icc * (1 + ORR))
+    var_object <- (target_icc * ORR * var_error) / (ORR - (target_icc * (ORR + 1)))
   } else if (icc_type == 2){
     #utilize ICC(A,K) parameter formula
-    var_object <- (target_icc * ROR * (var_error)) / (n_raters * ROR - target_icc * (n_raters*ROR +1))
+    var_object <- (target_icc * ORR * (var_error)) / (n_raters * ORR - target_icc * (n_raters* ORR +1))
   } else if (icc_type == 3){
     #utilize ICC(C,1) parameter formula
     var_object <- (target_icc * var_error) / (1-target_icc)
@@ -124,7 +93,7 @@ get_data_ROR <- function(target_icc, ROR = 0.2, n_raters = 1, icc_type = 1) {
   if (var_object <= 0) {
   stop("Target ICC and Ratio are mathematically impossible with this error variance.")
 }
-  var_rater <- var_object * ROR
+  var_rater <- var_object / ORR
 
 
   #return variances 

@@ -111,7 +111,8 @@ simulate_binary <- function(
   n_raters = 30,
   n_objects= 100,
   target_icc = 0.5,
-  p=0.5){
+  p=0.5,
+  icc_type = 1){
   # set seed first
   
   
@@ -122,14 +123,14 @@ simulate_binary <- function(
   #intercept <- p # 50% on the logit scale 
 
   # Scenario A: Noise is mostly random error (Rater Variance is low)
-  # Ratio 0.2 means: Rater Var is 5x less than Object Variance
-   ROR <- 0.20
+  # Ratio 5 means: Rater Var is 5x less than Object Variance
+   ORR <- 5
 
   # 2) First, obtain (object and rater) random effects 
   # must be fully crossed.
  
-  dat <- generate_data_ROR(n_raters,n_objects,
-    target_icc, ROR)
+  dat <- generate_data_ORR(n_raters,n_objects,
+    target_icc, ORR, icc_type)
   
   # 3)) Generate datasets given the binomial model 
   # calculate Linear Predictor and Probabilities
@@ -266,14 +267,15 @@ simulate_ordinal <- function(
 
 
   # Scenario A: Noise is mostly random error (Rater Variance is low)
-  # Ratio 0.2 means: Rater Var is 5x less than Object Variance
-   ROR <- 5
+  # Ratio =  5 means: Rater Var is 5x less than Object Variance or
+  # conversely, Object variacne is 5x greater than rater var 
+   ORR <- 5
 
   # 2) First, obtain (object and rater) random effects 
   # must be fully crossed.
  
-  dat <- generate_data_ROR(n_raters,n_objects,
-    target_icc, ROR, icc_type)
+  dat <- generate_data_ORR(n_raters,n_objects,
+    target_icc, ORR, icc_type)
   
   # 3)) Generate datasets given the binomial model 
   # calculate Linear Predictor and Probabilities
