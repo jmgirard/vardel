@@ -325,7 +325,11 @@ ordinal_sim <- function(n_raters, n_objects, target_icc, k_category,
       #Analyze 
 
       t_icc <- calc_vardel_icc(dat)
-      g_icc <- calc_g_ordinal_icc(dat,icc_type)
+      g_icc <- calc_g_ordinal_icc(dat, 
+        subject = "ObjectID",
+        rater = "RaterID",
+        scores = "Score",
+      icc_type = icc_type)
       caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
       aov_icc <- calc_aov_icc(dat)
 
