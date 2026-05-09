@@ -183,13 +183,14 @@ binary_sim <- function(n_raters, n_objects, target_icc, p,
 
       #Analyze 
       t_icc <- calc_vardel_icc(dat)
+      t_icc_glmm <- calc_vardel_icc_glmm(dat)
       g_icc <- calc_g_binary_icc(dat)
       caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
       aov_icc <- calc_aov_icc(dat)
       
  
 
-      combined_mat <- dplyr::bind_rows(t_icc,g_icc,caa,aov_icc)
+      combined_mat <- dplyr::bind_rows(t_icc,t_icc_glmm,g_icc,caa,aov_icc)
 
 
     }, stack = TRUE) 
@@ -358,6 +359,65 @@ ordinal_sim <- function(n_raters, n_objects, target_icc, k_category,
 #' @export
 run_all_ordinal <- function(P, iter, writeFiles){
   res <- furrr::future_pmap(P, ordinal_sim, reps=iter, writeFiles=writeFiles,
+      .progress = TRUE,
+    .options = furrr::furrr_options(seed = NULL,
+   packages = "vardel"))
+  
+  P$result <- res
+  return(P)
+}
+
+
+ordinal_sim_onlyglmmtmb <- function(n_raters, n_objects, target_icc, k_category, 
+  e_category, icc_type, seed, condition, filename, reps, writeFiles){
+    #set seed on each iteration
+    set.seed(seed, kind = "L'Ecuyer-CMRG", 
+    normal.kind = "Inversion", sample.kind = "Rejection") #parallel
+
+    res <- simhelpers::repeat_and_stack(reps, {
+
+
+      #DGP 
+      dat <- simulate_ordinal(n_raters, n_objects, target_icc,
+       k_category, e_category, icc_type)
+
+      #Analyze 
+
+      t_icc <- calc_vardel_icc_glmm(dat)
+      # g_icc <- calc_g_ordinal_icc(dat, 
+      #   subject = "ObjectID",
+      #   rater = "RaterID",
+      #   scores = "Score",
+      # icc_type = icc_type)
+      # caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
+      # aov_icc <- calc_aov_icc(dat)
+
+      #combined_mat <- dplyr::bind_rows(t_icc,g_icc,caa,aov_icc)
+      combined_mat <- t_icc
+
+
+    }, stack = TRUE) 
+
+  
+  if(writeFiles == TRUE){
+     #w_res <- as.data.frame(res)
+     #write_csv(w_res,file = file.path(filename))
+    saveRDS(res, file = file.path(filename))
+  }
+  return(res)
+  
+
+}
+
+
+
+
+#' @param P Parameter grid
+#' @param Iter Int; # of repetitions per condition
+#' @return ICCs
+#' @export
+run_all_ordinal_onlyglmmtmb <- function(P, iter, writeFiles){
+  res <- furrr::future_pmap(P, ordinal_sim_onlyglmmtmb, reps=iter, writeFiles=writeFiles,
       .progress = TRUE,
     .options = furrr::furrr_options(seed = NULL,
    packages = "vardel"))
