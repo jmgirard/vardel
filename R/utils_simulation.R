@@ -184,7 +184,11 @@ binary_sim <- function(n_raters, n_objects, target_icc, p,
       #Analyze 
       t_icc <- calc_vardel_icc(dat)
       t_icc_glmm <- calc_vardel_icc_glmm(dat)
-      g_icc <- calc_g_binary_icc(dat)
+      g_icc <- calc_g_binary_icc(dat,
+        subject = "ObjectID",
+        rater = "RaterID",
+        scores = "Score",
+        icc_type = icc_type)
       caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
       aov_icc <- calc_aov_icc(dat)
       
