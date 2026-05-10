@@ -389,10 +389,30 @@ ordinal_sim_onlyglmmtmb <- function(n_raters, n_objects, target_icc, k_category,
       
       t_icc <- calc_vardel_icc_glmm(dat)
 
+      if (!is.tibble(t_icc)){
+        t_icc <- tibble::tibble(
+                method = "icc_glmmtmb",
+               icc = NULL,
+               estimate = NULL,
+               sigma_s = NULL,
+               sigma_r = NULL,
+               sigma_vsr = NULL,  
+               vs = NULL,
+               vr = NULL,
+               vsr = NULL,   
+              message = NULL,
+              warning = NULL, 
+              error = TRUE,
+    #SeedNum = seedNum
+  )}
+
+      
+      
+
       combined_mat <- t_icc
       return(combined_mat)
 
-    })
+    }, simplify = FALSE)
 
     # res <- simhelpers::repeat_and_stack(reps, {
 
