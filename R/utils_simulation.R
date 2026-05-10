@@ -377,32 +377,50 @@ ordinal_sim_onlyglmmtmb <- function(n_raters, n_objects, target_icc, k_category,
     #set seed on each iteration
     set.seed(seed, kind = "L'Ecuyer-CMRG", 
     normal.kind = "Inversion", sample.kind = "Rejection") #parallel
+  
+    res <- replicate(n = reps, expr = {
+      #some sims conditions (9 to be exact)
+      #have some simulations that give out less columns
+      #and rbind() messesup, so use
+      #dplyr::list_rbind() instead
 
-    res <- simhelpers::repeat_and_stack(reps, {
-
-
-      #DGP 
       dat <- simulate_ordinal(n_raters, n_objects, target_icc,
        k_category, e_category, icc_type)
-
-      #Analyze 
-
+      
       t_icc <- calc_vardel_icc_glmm(dat)
-      # g_icc <- calc_g_ordinal_icc(dat, 
-      #   subject = "ObjectID",
-      #   rater = "RaterID",
-      #   scores = "Score",
-      # icc_type = icc_type)
-      # caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
-      # aov_icc <- calc_aov_icc(dat)
 
-      #combined_mat <- dplyr::bind_rows(t_icc,g_icc,caa,aov_icc)
       combined_mat <- t_icc
+      return(combined_mat)
+
+    })
+
+    # res <- simhelpers::repeat_and_stack(reps, {
 
 
-    }, stack = TRUE) 
+    #   #DGP 
+    #   dat <- simulate_ordinal(n_raters, n_objects, target_icc,
+    #    k_category, e_category, icc_type)
+
+    #   #Analyze 
+
+    #   t_icc <- calc_vardel_icc_glmm(dat)
+    #   # g_icc <- calc_g_ordinal_icc(dat, 
+    #   #   subject = "ObjectID",
+    #   #   rater = "RaterID",
+    #   #   scores = "Score",
+    #   # icc_type = icc_type)
+    #   # caa <- cat_vardel_adjusted(dat, weighting = "quadratic")
+    #   # aov_icc <- calc_aov_icc(dat)
+
+    #   #combined_mat <- dplyr::bind_rows(t_icc,g_icc,caa,aov_icc)
+    #   combined_mat <- t_icc
+
+
+    # }, stack = TRUE) 
 
   
+  res <- purrr::list_rbind(res) # fix 
+
   if(writeFiles == TRUE){
      #w_res <- as.data.frame(res)
      #write_csv(w_res,file = file.path(filename))
