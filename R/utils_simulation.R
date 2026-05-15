@@ -475,7 +475,7 @@ run_all_ordinal_onlyglmmtmb <- function(P, iter, writeFiles){
 
 #custom ordinal ANOVA simulation driver 
 ordinal_AOV_sim <- function(n_raters, n_objects, target_icc, k_category, 
-  e_category, seed, condition, filename, reps, writeFiles){
+  e_category, icc_type, seed, condition, filename, reps, writeFiles){
     #set seed on each iteration
     set.seed(seed, kind = "L'Ecuyer-CMRG", 
     normal.kind = "Inversion", sample.kind = "Rejection") #parallel
@@ -485,7 +485,7 @@ ordinal_AOV_sim <- function(n_raters, n_objects, target_icc, k_category,
 
       #DGP 
       dat <- simulate_ordinal(n_raters, n_objects, target_icc,
-       k_category, e_category)
+       k_category, e_category, icc_type)
 
       #Analyze 
 
