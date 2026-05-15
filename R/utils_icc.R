@@ -935,9 +935,9 @@ calc_g_binary_icc <- function(.data,
   model_fit <- safe_glmmTMB(
     formula = formula,
     family = binomial(link = "probit"),
+    REML = TRUE, 
     data = .data 
   )
-
 
   if ( is.null(model_fit$result ) ) {
   # we had an error!
@@ -1408,17 +1408,18 @@ model_fit <- safe_aov(
     MSr <- aov_mod["RaterID",]$`Mean Sq` #MeanSq Rater
     MSo <- aov_mod["ObjectID",]$`Mean Sq` #MeanSq Object
     MSe <- aov_mod["Residuals",]$`Mean Sq` #MeanSq Error
-    n_objects <-  unique(nk[[1]])
+
+    #Fixed by J.M. Girard, May 14th 
+    n_objects <-  length(unique(.data[[subject]]))
 
     #only interested in ICC(A,1) #McGraw & Wong (1996)
-    iccs_a1 <- (MSr-MSe) / (MSr + ((khat-1)*MSe) + 
-      ((khat/n_objects)*(MSo - MSe)))
+    iccs_a1 <- (MSo - MSe) / (MSo + ((khat - 1) * MSe) + ((khat / n_objects) * (MSr - MSe)))
 
-    iccs_ak <- (MSr-MSe) / (MSr + ((MSo - MSe)/khat)) 
+    iccs_ak <- (MSo - MSe) / (MSo + ((MSr - MSe) / n_objects)) 
 
-    iccs_c1 <- (MSr - MSe) / (MSr + ((khat -1)*MSe))
+    iccs_c1 <- (MSo - MSe) / (MSo + ((khat - 1) * MSe))
 
-    iccs_ck <- (MSr - MSe)/(MSr)
+    iccs_ck <- (MSo - MSe) / MSo
 
 
     iccs <- c(iccs_a1, iccs_ak, iccs_c1, iccs_ck) 
