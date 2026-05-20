@@ -7,78 +7,32 @@
 #' @param target_icc ICC 
 #' @return data
 #' @export
-simulate_linear <- function(n_raters = 30,
-  n_objects= 100,
-  target_icc = 0.5) {
-  
-  # Scenario A: Noise is mostly random error (Rater Variance is low)
-  # Ratio 0.2 means: Rater Var is 5x less than Object Variance
-   ROR <- 0.20
-  
-  # 2) First, obtain (object and rater) random effects 
-  # must be fully crossed.
-  
-  
-  dat <- generate_data_ROR(n_raters,n_objects,
-    target_icc, ROR)
-  
-  # 3)) Generate datasets given the binomial model 
-  # calculate Linear Predictor and Probabilities
-  df <- dat |> tibble::tibble() |> 
-    dplyr::mutate(
-    # Map random effects to rows
-    # u_i = object_effects[Object_ID],
-    # v_j = rater_effects[Rater_ID],
-    
-    # Linear Predictor (probit scale)
-    Score = u_i + v_j + Error, # raw score 
-    
-    #Score = ifelse(eta > 0 , 1, 0) #threshold on latent scale 
-
-    #Score = eta
-    #Seed = SEED
-  )
-
+simulate_linear <- function(n_raters, n_objects, target_icc, icc_type) {
+  ORR <- 5
+  dat <- generate_data_ORR(n_raters, n_objects, target_icc, ORR, icc_type)
+  df <- dat |> 
+    tibble::as_tibble() |> 
+    dplyr::mutate(Score = u_i + v_j + Error)
   return(df)
-
-
-
-
 }
 
-#custom binary simulation driver 
-linear_sim <- function(n_raters, n_objects, target_icc,
-  seed,filename, reps, writeFiles){
-    #set seed on each iteration
-    set.seed(seed, kind = "L'Ecuyer-CMRG", 
-    normal.kind = "Inversion", sample.kind = "Rejection") #parallel
-
+linear_sim <- function(n_raters, n_objects, target_icc, icc_type,
+  seed, filename, reps, writeFiles){
+    set.seed(
+      seed, 
+      kind = "L'Ecuyer-CMRG", 
+      normal.kind = "Inversion", 
+      sample.kind = "Rejection"
+    )
     res <- simhelpers::repeat_and_stack(reps, {
-
-
-      #DGP 
-      dat <- simulate_linear(n_raters, n_objects, target_icc)
-
-      #Analyze 
-
+      dat <- simulate_linear(n_raters, n_objects, target_icc, icc_type)
       aov_icc <- calc_aov_icc(dat)
-
-
     }, stack = TRUE) 
-
-  
   if(writeFiles == TRUE){
-     #w_res <- as.data.frame(res)
-     #write_csv(w_res,file = file.path(filename))
     saveRDS(res, file = file.path(filename))
   }
   return(res)
-  
-
 }
-
-
-
 
 #' @param P Parameter grid
 #' @param Iter Int; # of repetitions per condition
@@ -107,62 +61,29 @@ run_all_AOVlinear <- function(P, iter, writeFiles){
 #' @param p probability
 #' @return data
 #' @export
-simulate_binary <- function(
-  n_raters = 30,
-  n_objects= 100,
-  target_icc = 0.5,
-  p=0.5,
-  icc_type = 1){
-  # set seed first
+simulate_binary <- function(n_raters, n_objects, target_icc, p, icc_type) {
+
+  ORR <- 5
+
+  valid_sample <- FALSE
   
-  
-  # 1) Set binary data hyper-parameters 
-  
-  #fixed_obj_var <- 1  # assume using rater-residual ratio for now
-  intercept <- qnorm(p) # probit transformation 
-  #intercept <- p # 50% on the logit scale 
-
-  # Scenario A: Noise is mostly random error (Rater Variance is low)
-  # Ratio 5 means: Rater Var is 5x less than Object Variance
-   ORR <- 5
-
-  # 2) First, obtain (object and rater) random effects 
-  # must be fully crossed.
- 
-  dat <- generate_data_ORR(n_raters,n_objects,
-    target_icc, ORR, icc_type)
-  
-  # 3)) Generate datasets given the binomial model 
-  # calculate Linear Predictor and Probabilities
-  df <- dat |> tibble::tibble() |>
-    dplyr::mutate(
-    # Map random effects to rows
-    # u_i = object_effects[Object_ID],
-    # v_j = rater_effects[Rater_ID],
+  while (!valid_sample) {
+    dat <- generate_data_ORR(n_raters, n_objects, target_icc, ORR, icc_type)
+    total_var <_ dat$OBJ_VAR[1] + dat$RATER_VAR[1] + dat$RES_VAR[1]
+    scaled_intercept <- qnorm(p) * sqrt(total_var)
     
-    # Linear Predictor (probit scale)
-    eta = intercept + u_i + v_j + Error, # latent score 
-    
-    # Probability scale (probit link)
-    #prob = pnorm(eta), 
-    
-    # Generate Binary Rating
-    #Score = rbinom(n(), 1, prob) #bernouli (don't do since not stochastic?)
-
-    
-     #threshold on latent scale 
-
-    #Scorme = ifelse(quantileqnorm(0.5), 1, 0)
-
-    #Score = eta
-    #Seed = SEED
-  ) |> 
-    dplyr::mutate( 
-      Score = dplyr::if_else(eta <= quantile(eta, probs = p) , 0, 1) 
-    )
-
+    df <- dat |>
+      tibble::as_tibble() |>
+      dplyr::mutate(
+        eta = intercept + u_i + v_j + Error,
+        Score = dplyr::if_else(eta <= 0, 0, 1)
+      )
+      
+    if (length(unique(df$Score)) > 1) {
+      valid_sample <- TRUE
+    }
+  }
   return(df)
-
 }
 
 
@@ -170,15 +91,15 @@ simulate_binary <- function(
 #custom binary simulation driver 
 binary_sim <- function(n_raters, n_objects, target_icc, p, 
   icc_type, seed, condition, filename, reps, writeFiles){
-    #set seed on each iteration
-    set.seed(seed, kind = "L'Ecuyer-CMRG", 
-    normal.kind = "Inversion", sample.kind = "Rejection") #parallel
-
+    set.seed(
+      seed, 
+      kind = "L'Ecuyer-CMRG", 
+      normal.kind = "Inversion", 
+      sample.kind = "Rejection"
+    )
     res <- simhelpers::repeat_and_stack(reps, {
 
-
-      #DGP 
-      dat <- simulate_binary(n_raters, n_objects, target_icc, p)
+      dat <- simulate_binary(n_raters, n_objects, target_icc, p, icc_type)
 
 
       #Analyze 
@@ -251,65 +172,38 @@ get_decay_cuts <- function(k) {
 #' @return data
 #' @export
 simulate_ordinal <- function(
-  n_raters = 30,
-  n_objects= 100,
-  target_icc = 0.5,
-  k_category = 3,
-  e_category = TRUE,
-  icc_type = 1 #default to ICC(A,1)
+  n_raters,
+  n_objects,
+  target_icc,
+  k_category,
+  e_category,
+  icc_type
 ){
   
-  
-  # 1) Set ordinal data hyper-parameters 
-  # no grand mean intercept due to thresholds
-
   if (e_category ==TRUE) {
     probs <- seq(1/k_category, (k_category-1)/k_category, length.out = k_category-1)
     cuts <- qnorm(probs)
   } else {
     cuts <- get_decay_cuts(k_category)
   }
-
-
-  # Scenario A: Noise is mostly random error (Rater Variance is low)
-  # Ratio =  5 means: Rater Var is 5x less than Object Variance or
-  # conversely, Object variacne is 5x greater than rater var 
-   ORR <- 5
-
-  # 2) First, obtain (object and rater) random effects 
-  # must be fully crossed.
- 
-  dat <- generate_data_ORR(n_raters,n_objects,
-    target_icc, ORR, icc_type)
-  
-  # 3)) Generate datasets given the binomial model 
-  # calculate Linear Predictor and Probabilities
-  df <- dat |> tibble::tibble () |> 
-    dplyr::mutate(
-    # Map random effects to rows
-    # u_i = object_effects[Object_ID],
-    # v_j = rater_effects[Rater_ID],
-    
-    # Linear Predictor (probit scale)
-    eta = u_i + v_j + Error, # latent score 
-    
-    # Probability scale (probit link)
-    #prob = pnorm(eta), 
-    
-    # Generate ordinal 
-    #Score = rbinom(n(), 1, prob) #bernouli (don't do since not stochastic?)
-
-    
-    Score = cut(eta, breaks = c(-Inf, cuts, Inf), labels = FALSE) #thresholds on latent scale 
-
-    #Score = eta
-    #Seed = SEED
-  )
-
-  return(df)
-
-  
+  ORR <- 5
+  valid_sample <- FALSE
+  while(!valid_sample) {
+    dat <- generate_data_ORR(n_raters, n_objects, target_icc, ORR, icc_type)
+    total_var <- dat$OBJ_VAR[1] + dat$RATER_VAR[1] + dat$RES_VAR[1]
+    scaled_cuts <- cuts * sqrt(total_var)
+    df <- dat |>
+      tibble::as_tibble() |>
+      dplyr::mutate(
+        eta = u_i + v_j + Error,
+        Score = cut(eta, breaks = c(-Inf, scaled_cuts, Inf), labels = FALSE)
+      )
+    if (length(unique(df$Score)) > 1) {
+      valid_sample <- TRUE
+    }
   }
+  return(df)
+}
 
 
 
@@ -529,7 +423,7 @@ run_ANOVA_ordinal <- function(P, iter, writeFiles){
 
 
 #custom binary simulation driver 
-binary_AOV_sim <- function(n_raters, n_objects, target_icc, p, 
+binary_AOV_sim <- function(n_raters, n_objects, target_icc, p, icc_type,
   seed,filename, reps, writeFiles){
     #set seed on each iteration
     set.seed(seed, kind = "L'Ecuyer-CMRG", 
@@ -539,7 +433,7 @@ binary_AOV_sim <- function(n_raters, n_objects, target_icc, p,
 
 
       #DGP 
-      dat <- simulate_binary(n_raters, n_objects, target_icc, p)
+      dat <- simulate_binary(n_raters, n_objects, target_icc, p, icc_type)
 
       #Analyze 
 

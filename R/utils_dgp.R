@@ -7,7 +7,7 @@
 #' @return variances/effects
 #' @export
 generate_data_ORR<- function(n_raters,n_objects,
-  target_icc, ORR = 5, icc_type = 1){
+  target_icc, ORR, icc_type){
 
   # Obtain variances 
   sigma_sqr <- get_data_ORR(target_icc, ORR, n_raters, icc_type)
@@ -64,7 +64,7 @@ generate_data_ORR<- function(n_raters,n_objects,
 #' @param icc_type ICC type
 #' @return variances/effects
 #' @export
-get_data_ORR <- function(target_icc, ORR = 5, n_raters = 1, icc_type = 1) {
+get_data_ORR <- function(target_icc, ORR, n_raters, icc_type) {
 
   #error check on ICC value 
     if(target_icc >= 1 | target_icc <=0) {
