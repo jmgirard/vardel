@@ -8,7 +8,6 @@ Description: This is a lightweight version of {varde} and {agreement} for Aaron 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports: 
     assertthat,
     boot,
@@ -19,3 +18,4 @@ Imports:
     ordinal,
     simhelpers,
     tibble
+Config/roxygen2/version: 8.0.0
