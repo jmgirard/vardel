@@ -1,7 +1,7 @@
 #' @param .data dataframe
 #' @param subject char
 #' @param rater char
-#' @param score Int 
+#' @param score Int
 #' @return variances/effects
 #' @export
 calc_g_binary_icc <- function(
@@ -10,12 +10,12 @@ calc_g_binary_icc <- function(
   rater = "RaterID",
   score = "Score",
   srm = NULL
-){
+) {
   if (is.null(srm)) {
     srm <- create_srm(
-      .data = .data, 
-      subject = subject, 
-      rater = rater, 
+      .data = .data,
+      subject = subject,
+      rater = rater,
       score = score
     )
   }
@@ -32,14 +32,17 @@ calc_g_binary_icc <- function(
   # Calculate the harmonic mean of the number of raters per subject
   khat <- calc_khat(srm)
   formula <- create_parse_glmmtmb(.data, subject, rater, score, 1)
-  safe_glmmTMB <- purrr::quietly(purrr::possibly(glmmTMB::glmmTMB, otherwise = NULL))
+  safe_glmmTMB <- purrr::quietly(purrr::possibly(
+    glmmTMB::glmmTMB,
+    otherwise = NULL
+  ))
   model_fit <- safe_glmmTMB(
     formula = formula,
     family = binomial(link = "probit"),
-    REML = TRUE, 
-    data = .data 
+    REML = TRUE,
+    data = .data
   )
-  if ( is.null(model_fit$result ) ) {
+  if (is.null(model_fit$result)) {
     # we had an error!
     iccs <- rep(NA_real_, 4)
     vs <- NA_real_
@@ -66,20 +69,44 @@ calc_g_binary_icc <- function(
     theta_idx <- grep("^theta", names(model_fitted$fit$par))
     theta_vcov <- full_vcov[theta_idx, theta_idx, drop = FALSE]
     theta_vals <- model_fitted$fit$par[theta_idx]
-    form_ak <- as.formula(paste0("~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + 1) / ", khat, "))"))
-    form_ck <- as.formula(paste0("~ exp(x1)^2 / (exp(x1)^2 + (1 / ", khat, "))"))
-    se_a1 <- tryCatch(msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + 1), theta_vals, theta_vcov), error = function(e) NA)
-    se_ak <- tryCatch(msm::deltamethod(form_ak, theta_vals, theta_vcov), error = function(e) NA)
-    se_c1 <- tryCatch(msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + 1), theta_vals, theta_vcov), error = function(e) NA)
-    se_ck <- tryCatch(msm::deltamethod(form_ck, theta_vals, theta_vcov), error = function(e) NA)
+    form_ak <- as.formula(paste0(
+      "~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + 1) / ",
+      khat,
+      "))"
+    ))
+    form_ck <- as.formula(paste0(
+      "~ exp(x1)^2 / (exp(x1)^2 + (1 / ",
+      khat,
+      "))"
+    ))
+    se_a1 <- tryCatch(
+      msm::deltamethod(
+        ~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + 1),
+        theta_vals,
+        theta_vcov
+      ),
+      error = function(e) NA
+    )
+    se_ak <- tryCatch(
+      msm::deltamethod(form_ak, theta_vals, theta_vcov),
+      error = function(e) NA
+    )
+    se_c1 <- tryCatch(
+      msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + 1), theta_vals, theta_vcov),
+      error = function(e) NA
+    )
+    se_ck <- tryCatch(
+      msm::deltamethod(form_ck, theta_vals, theta_vcov),
+      error = function(e) NA
+    )
     se_vector <- c(se_a1, se_ak, se_c1, se_ck)
     safe_iccs <- pmin(pmax(iccs, 1e-5), 1 - 1e-5)
     logit_iccs <- qlogis(safe_iccs)
     se_logit <- se_vector / (safe_iccs * (1 - safe_iccs))
     lower_ci <- plogis(logit_iccs - (1.96 * se_logit))
     upper_ci <- plogis(logit_iccs + (1.96 * se_logit))
-    message <- length(model_fit$message) > 0 
-    warning <- length(model_fit$warning) > 0  
+    message <- length(model_fit$message) > 0
+    warning <- length(model_fit$warning) > 0
     error <- FALSE
   }
   icc_names <- c("ICC(A,1)", "ICC(A,k)", "ICC(C,1)", "ICC(C,k)")
@@ -94,12 +121,12 @@ calc_g_binary_icc <- function(
     ci_upper = upper_ci,
     sigma_s = subject_var,
     sigma_r = rater_var,
-    sigma_vsr = resid_vsr,  
+    sigma_vsr = resid_vsr,
     vs = vs,
     vr = vr,
-    vsr = vsr,   
+    vsr = vsr,
     message = as.character(message),
-    warning = as.character(warning), 
+    warning = as.character(warning),
     error = as.character(error)
   )
   return(out)

@@ -1,7 +1,6 @@
 # from {agreement} by Jeffrey Girard, PhD
 # https://github.com/jmgirard/agreement?tab=readme-ov-file
 
-
 #' Calculate Chance-Adjusted Agreement
 #'
 #' Description
@@ -81,19 +80,20 @@
 #' @family functions for categorical data
 #' @family functions for chance-adjusted agreement
 #' @export
-cat_vardel_adjusted <- function(.data,
-                         object = "ObjectID",
-                         rater = "RaterID",
-                         score = "Score",
-                         approach = c("kappa","s"),
-                         categories = NULL,
-                         weighting = c("identity"),
-                         agreement = NULL,
-                         bootstrap = 0,
-                         alpha_c = NULL,
-                         custom_weights = NULL,
-                         warnings = FALSE) {
-
+cat_vardel_adjusted <- function(
+  .data,
+  object = "ObjectID",
+  rater = "RaterID",
+  score = "Score",
+  approach = c("kappa", "s"),
+  categories = NULL,
+  weighting = c("identity"),
+  agreement = NULL,
+  bootstrap = 0,
+  alpha_c = NULL,
+  custom_weights = NULL,
+  warnings = FALSE
+) {
   # Validate inputs
   assertthat::assert_that(is.data.frame(.data) || is.matrix(.data))
   approach <- match.arg(approach, several.ok = TRUE)
@@ -101,7 +101,7 @@ cat_vardel_adjusted <- function(.data,
   #weighting <- match.arg(weighting)
   assertthat::assert_that(
     is.null(agreement) ||
-    all(agreement %in% c("objects", "pairs", "kripp"))
+      all(agreement %in% c("objects", "pairs", "kripp"))
   )
   assertthat::assert_that(bootstrap == 0 || assertthat::is.count(bootstrap))
   assertthat::assert_that(assertthat::is.flag(warnings))
@@ -112,9 +112,9 @@ cat_vardel_adjusted <- function(.data,
   # Prepare .data for analysis
   d <- prep_data_cat(
     .data = .data,
-    object = {{object}},
-    rater = {{rater}},
-    score = {{score}},
+    object = {{ object }},
+    rater = {{ rater }},
+    score = {{ score }},
     approach = approach,
     categories = categories,
     weighting = weighting,
@@ -129,18 +129,24 @@ cat_vardel_adjusted <- function(.data,
 
   # Warn about bootstrapping samples with less than 20 objects
   if (d$n_objects < 20 && bootstrap > 0 && warnings == TRUE) {
-    warning("With a small number of objects, bootstrap confidence intervals may not be stable.")
+    warning(
+      "With a small number of objects, bootstrap confidence intervals may not be stable."
+    )
   }
 
   # Warn about bootstrapping with fewer than 1000 resamples
   if (bootstrap > 0 && bootstrap < 1000 && warnings == TRUE) {
-    warning("To get stable confidence intervals, consider using more bootstrap resamples.")
+    warning(
+      "To get stable confidence intervals, consider using more bootstrap resamples."
+    )
   }
 
   # Warn about there being fewer than 2 categories
   if (d$n_categories < 2) {
     if (warnings == TRUE) {
-      warning("Only a single category was observed or requested. Returning NA.\nHint: Try setting the possible categories explicitly with the categories argument")
+      warning(
+        "Only a single category was observed or requested. Returning NA.\nHint: Try setting the possible categories explicitly with the categories argument"
+      )
     }
   }
   if (d$n_raters < 2) {
@@ -150,14 +156,15 @@ cat_vardel_adjusted <- function(.data,
   }
 
   # Create function to perform bootstrapping
-  boot_function <- function(ratings,
-                            index,
-                            function_list,
-                            categories,
-                            weight_matrix,
-                            agreement,
-                            alpha_c) {
-
+  boot_function <- function(
+    ratings,
+    index,
+    function_list,
+    categories,
+    weight_matrix,
+    agreement,
+    alpha_c
+  ) {
     resample <- ratings[index, , drop = FALSE]
     bsr <- rep(NA_real_, times = length(function_list) * 3)
     # Loop through approaches
@@ -207,67 +214,69 @@ cat_vardel_adjusted <- function(.data,
     estimate = kap,
     sigma_s = NA,
     sigma_r = NA,
-    sigma_vsr = NA,  
+    sigma_vsr = NA,
     vs = NA,
     vr = NA,
-    vsr = NA,   
+    vsr = NA,
     message = "",
     warning = "",
     error = ""
-  ) |> dplyr::add_row(
-    method = c("s_bp_obs", "s_bp_exp", "s_bp_adj"),
-    icc = NA, 
-    estimate = sbp,
-    sigma_s = NA,
-    sigma_r = NA,
-    sigma_vsr = NA,  
-    vs = NA,
-    vr = NA,
-    vsr = NA,   
-    message = "",
-    warning = "",
-    error = ""
-  )
+  ) |>
+    dplyr::add_row(
+      method = c("s_bp_obs", "s_bp_exp", "s_bp_adj"),
+      icc = NA,
+      estimate = sbp,
+      sigma_s = NA,
+      sigma_r = NA,
+      sigma_vsr = NA,
+      vs = NA,
+      vr = NA,
+      vsr = NA,
+      message = "",
+      warning = "",
+      error = ""
+    )
 
   return(res_caa)
 }
 
 
 # Prepare categorical data for analysis -----------------------------------
-prep_data_cat <- function(.data,
-                          object,
-                          rater,
-                          score,
-                          approach = NULL,
-                          categories = NULL,
-                          weighting = "identity",
-                          agreement = NULL,
-                          alpha_c = NULL,
-                          custom_weights = NULL,
-                          bootstrap = 0) {
-
+prep_data_cat <- function(
+  .data,
+  object,
+  rater,
+  score,
+  approach = NULL,
+  categories = NULL,
+  weighting = "identity",
+  agreement = NULL,
+  alpha_c = NULL,
+  custom_weights = NULL,
+  bootstrap = 0
+) {
   out <- list()
 
   # Ensure df is a tibble
   df <- tibble::as_tibble(.data)
 
   # Select the important variables
-  df <- dplyr::select(df, {{object}}, {{rater}}, {{score}})
+  df <- dplyr::select(df, {{ object }}, {{ rater }}, {{ score }})
 
   # Add explicit NA rows to missing object-rater combinations
   #df <- tidyr::complete(df, {{object}}, {{rater}})
 
   # Reorder df by rater and object so that scores fills out matrix properly
-  df <- dplyr::arrange(df, {{rater}}, {{object}})
+  df <- dplyr::arrange(df, {{ rater }}, {{ object }})
 
   # Get and count each variable's unique values
-  out$objects <- unique(dplyr::pull(df, {{object}}))
-  out$raters <- unique(dplyr::pull(df, {{rater}}))
+  out$objects <- unique(dplyr::pull(df, {{ object }}))
+  out$raters <- unique(dplyr::pull(df, {{ rater }}))
   out$n_objects <- length(out$objects)
   out$n_raters <- length(out$raters)
 
   # Pull scores, convert NaN to NA, and count NAs
-  scores <- dplyr::pull(df, {{score}})
+  scores <- dplyr::pull(df, {{ score }})
   scores[is.nan(scores)] <- NA
   out$n_missing_scores <- sum(rlang::are_na(scores))
 
@@ -302,15 +311,21 @@ prep_data_cat <- function(.data,
   out <- remove_uncoded(out)
 
   # Validate basic counts
-  assertthat::assert_that(out$n_objects >= 1,
-              msg = "There must be at least 1 valid object in `.data`.")
-  assertthat::assert_that(out$n_raters >= 2,
-              msg = "There must be at least 2 raters in `.data`.")
+  assertthat::assert_that(
+    out$n_objects >= 1,
+    msg = "There must be at least 1 valid object in `.data`."
+  )
+  assertthat::assert_that(
+    out$n_raters >= 2,
+    msg = "There must be at least 2 raters in `.data`."
+  )
 
   # Validate categories
   cat_unknown <- setdiff(cat_observed, cat_possible)
-  assertthat::assert_that(is_empty(cat_unknown),
-              msg = "A category not in `categories` was observed in `.data`.")
+  assertthat::assert_that(
+    is_empty(cat_unknown),
+    msg = "A category not in `categories` was observed in `.data`."
+  )
 
   # Get weight matrix
   out$weighting <- weighting
@@ -330,8 +345,8 @@ prep_data_cat <- function(.data,
   # Set up alpha_c
   assertthat::assert_that(
     is.null(alpha_c) ||
-    length(alpha_c) == 1 ||
-    length(alpha_c) == n_cat_possible
+      length(alpha_c) == 1 ||
+      length(alpha_c) == n_cat_possible
   )
   if ("irsq" %in% approach && is.null(alpha_c)) {
     alpha_c <- rep(1, times = n_cat_possible)
@@ -381,9 +396,10 @@ objects_rat_cat <- function(codes, categories) {
 
 # Calculate weight matrix -------------------------------------------------
 #' @export
-calc_weights <- function(type = c("identity", "linear", "quadratic"),
-                         categories) {
-
+calc_weights <- function(
+  type = c("identity", "linear", "quadratic"),
+  categories
+) {
   type <- match.arg(type, several.ok = FALSE)
 
   # Count the categories
@@ -393,7 +409,9 @@ calc_weights <- function(type = c("identity", "linear", "quadratic"),
   if (!is.numeric(categories) && type != "identity") {
     category_values <- 1:n_categories
     warning(
-      "Numeric categories are required for ", type, " weights.\n",
+      "Numeric categories are required for ",
+      type,
+      " weights.\n",
       "Converting to integers from 1 to the number of categories."
     )
   } else {
@@ -426,7 +444,6 @@ calc_weights <- function(type = c("identity", "linear", "quadratic"),
 # safe_boot.ci ------------------------------------------------------------
 
 safe_boot.ci <- function(boot.out, level, type, index, ...) {
-
   # Determine the location of results in bootci object
   if (type == "bca") {
     field <- "bca"
@@ -434,7 +451,7 @@ safe_boot.ci <- function(boot.out, level, type, index, ...) {
   } else if (type == "perc") {
     field <- "percent"
     elems <- 4:5
-  } else if (type == "basic") { 
+  } else if (type == "basic") {
     field <- "basic"
     elems <- 4:5
   } else if (type == "norm") {
@@ -460,11 +477,12 @@ safe_boot.ci <- function(boot.out, level, type, index, ...) {
 }
 
 # Redirect to the desired formula for percent observed agreement
-calc_agreement <- function(codes,
-                           categories,
-                           weight_matrix,
-                           formula = c("objects", "pairs", "kripp")) {
-
+calc_agreement <- function(
+  codes,
+  categories,
+  weight_matrix,
+  formula = c("objects", "pairs", "kripp")
+) {
   formula <- match.arg(formula, several.ok = FALSE)
 
   if (formula == "objects") {
@@ -476,7 +494,6 @@ calc_agreement <- function(codes,
 # Calculate percent observed agreement averaged over objects
 # Gwet (2014)
 calc_agreement_objects <- function(codes, categories, weight_matrix) {
-
   # How many raters assigned each object to each category?
   r_oc <- raters_obj_cat(codes, categories)
 
@@ -502,12 +519,12 @@ calc_agreement_objects <- function(codes, categories, weight_matrix) {
 }
 
 
-
 # Worker function to calculate the S score and its components
 calc_s <- function(codes, categories, weight_matrix, agreement, ...) {
-
   # Default to agreement averaged over objects
-  if (is.null(agreement)) agreement <- "objects"
+  if (is.null(agreement)) {
+    agreement <- "objects"
+  }
 
   # Calculate percent observed agreement
   poa <- calc_agreement(codes, categories, weight_matrix, agreement)
@@ -526,7 +543,6 @@ calc_s <- function(codes, categories, weight_matrix, agreement, ...) {
 
 # Worker function to calculate expected agreement using the S model of chance
 calc_chance_s <- function(codes, categories, weight_matrix) {
-
   # How many categories were possible?
   n_categories <- length(categories)
 
@@ -540,14 +556,14 @@ calc_chance_s <- function(codes, categories, weight_matrix) {
 }
 
 
-
 ######## CAA apporach #2
 
 # Calculate the kappa coefficient and its components
 calc_kappa <- function(codes, categories, weight_matrix, agreement, ...) {
-
   # Default to agreement averaged over objects
-  if (is.null(agreement)) agreement <- "objects"
+  if (is.null(agreement)) {
+    agreement <- "objects"
+  }
 
   # Calculate percent observed agreement
   poa <- calc_agreement(codes, categories, weight_matrix, agreement)
@@ -566,7 +582,6 @@ calc_kappa <- function(codes, categories, weight_matrix, agreement, ...) {
 
 # Calculate expected agreement using the kappa model of chance
 calc_chance_kappa <- function(codes, categories, weight_matrix) {
-
   n_raters <- ncol(codes)
   n_categories <- length(categories)
 

@@ -1,9 +1,11 @@
 # Helper functions --------------------------------------------------------
 
-create_srm <- function(.data,
-                       subject = "subject",
-                       rater = "rater",
-                       score = "score") {
+create_srm <- function(
+  .data,
+  subject = "subject",
+  rater = "rater",
+  score = "score"
+) {
   # TODO: Allow subject, rater, and score to be specified using NSE
   assertthat::assert_that(is.data.frame(.data) || is.matrix(.data))
   cn <- colnames(.data)
@@ -21,68 +23,102 @@ create_srm <- function(.data,
   new_srm(srm)
 }
 
-create_parse <- function(.data, subject, rater, scores, v){
+create_parse <- function(.data, subject, rater, scores, v) {
   twoway <- is_twoway(.data, subject, rater)
   if (twoway && v == 1) {
     formula <- brms::bf(paste0(
-      scores, " ~ 1 + (1 | ", subject, ") + (1 | ", rater, ")"
+      scores,
+      " ~ 1 + (1 | ",
+      subject,
+      ") + (1 | ",
+      rater,
+      ")"
     ))
   } else if (!twoway && v == 1) {
     formula <- brms::bf(paste0(
-      scores, " ~ 1 + (1 | ", subject, ")"
+      scores,
+      " ~ 1 + (1 | ",
+      subject,
+      ")"
     ))
   } else if (twoway && v > 1) {
     formula <- brms::bf(paste0(
-      "mvbind(", paste(scores, collapse = ", "), ") | mi() ~ ",
-      "1 + (1 | ", subject, ") + (1 | ", rater, ")"
-    )) + brms::set_rescor(FALSE)
+      "mvbind(",
+      paste(scores, collapse = ", "),
+      ") | mi() ~ ",
+      "1 + (1 | ",
+      subject,
+      ") + (1 | ",
+      rater,
+      ")"
+    )) +
+      brms::set_rescor(FALSE)
   } else if (!twoway && v > 1) {
     formula <- brms::bf(paste0(
-      "mvbind(", paste(scores, collapse = ", "), ") | mi() ~ ",
-      "1 + (1 | ", subject, ")"
-    )) + brms::set_rescor(FALSE)
+      "mvbind(",
+      paste(scores, collapse = ", "),
+      ") | mi() ~ ",
+      "1 + (1 | ",
+      subject,
+      ")"
+    )) +
+      brms::set_rescor(FALSE)
   } else {
     stop("Error determining model type")
   }
   return(formula)
-
 }
 
-create_parse_glmmtmb <- function(.data, subject, rater, scores, v){
+create_parse_glmmtmb <- function(.data, subject, rater, scores, v) {
   twoway <- is_twoway(.data, subject, rater)
   if (twoway && v == 1) {
     formula <- as.formula(paste0(
-      scores, " ~ 1 + (1 | ", subject, ") + (1 | ", rater, ")"
+      scores,
+      " ~ 1 + (1 | ",
+      subject,
+      ") + (1 | ",
+      rater,
+      ")"
     ))
   } else if (!twoway && v == 1) {
     formula <- as.formula(paste0(
-      scores, " ~ 1 + (1 | ", subject, ")"
+      scores,
+      " ~ 1 + (1 | ",
+      subject,
+      ")"
     ))
   } else if (twoway && v > 1) {
     formula <- as.formula(paste0(
-      "mvbind(", paste(scores, collapse = ", "), ") | mi() ~ ",
-      "1 + (1 | ", subject, ") + (1 | ", rater, ")"
-    )) 
+      "mvbind(",
+      paste(scores, collapse = ", "),
+      ") | mi() ~ ",
+      "1 + (1 | ",
+      subject,
+      ") + (1 | ",
+      rater,
+      ")"
+    ))
   } else if (!twoway && v > 1) {
     formula <- as.formula(paste0(
-      "mvbind(", paste(scores, collapse = ", "), ") | mi() ~ ",
-      "1 + (1 | ", subject, ")"
-    )) 
+      "mvbind(",
+      paste(scores, collapse = ", "),
+      ") | mi() ~ ",
+      "1 + (1 | ",
+      subject,
+      ")"
+    ))
   } else {
     stop("Error determining model type")
   }
   return(formula)
-
 }
 
-create_parseaov <- function(.data, subject, rater, scores, v){
+create_parseaov <- function(.data, subject, rater, scores, v) {
   twoway <- is_twoway(.data, subject, rater)
   if (twoway && v == 1) {
-    formula <- paste0("",scores," ~ ",subject, " + ", rater, "")
-
+    formula <- paste0("", scores, " ~ ", subject, " + ", rater, "")
   } else if (!twoway && v == 1) {
-    formula <- paste0("(",scores," ~ ",subject, ")")
-
+    formula <- paste0("(", scores, " ~ ", subject, ")")
   } else if (twoway && v > 1) {
     stop("Multiple scores in AOV? Need to do...")
   } else if (!twoway && v > 1) {
@@ -91,7 +127,6 @@ create_parseaov <- function(.data, subject, rater, scores, v){
     stop("Error determining model type")
   }
   return(formula)
-
 }
 
 is_balanced <- function(.data, subject, rater) {
@@ -130,7 +165,7 @@ calc_khat <- function(x, ...) {
 
 #' @export
 
-calc_ks<- function(x, ...) {
+calc_ks <- function(x, ...) {
   UseMethod("calc_ks")
 }
 
@@ -151,10 +186,9 @@ new_srm <- function(x, ...) {
 
 ## calc_ks methods
 
-#' @method calc_ks varde_srm 
+#' @method calc_ks varde_srm
 #' @export
 calc_ks.varde_srm <- function(srm) {
-
   # Calculate ks from subject-by-rater matrix
   ks <- rowSums(srm)
 
@@ -163,16 +197,16 @@ calc_ks.varde_srm <- function(srm) {
 
   # Return ks
   ks
-
 }
 
 #' @method calc_ks data.frame
 #' @export
-calc_ks.data.frame <- function(.data,
-                               subject = "subject",
-                               rater = "rater",
-                               score = "score") {
-
+calc_ks.data.frame <- function(
+  .data,
+  subject = "subject",
+  rater = "rater",
+  score = "score"
+) {
   # Create subject-by-rater matrix from .data
   srm <- create_srm(.data, subject = subject, rater = rater, score = score)
 
@@ -181,7 +215,6 @@ calc_ks.data.frame <- function(.data,
 
   # Return ks
   ks
-
 }
 
 ## calc_khat methods
@@ -189,19 +222,16 @@ calc_ks.data.frame <- function(.data,
 #' @method calc_khat varde_ks
 #' @export
 calc_khat.varde_ks <- function(ks) {
-
   # Calculate harmonic mean
   khat <- length(ks) / sum(1 / ks)
 
   # Return khat
   khat
-
 }
 
 #' @method calc_khat varde_srm
 #' @export
 calc_khat.varde_srm <- function(srm) {
-
   # Count raters per subject from subject-by-rater matrix
   ks <- calc_ks(srm)
 
@@ -210,17 +240,17 @@ calc_khat.varde_srm <- function(srm) {
 
   # Return khat
   khat
-
 }
 
 #' @method calc_khat data.frame
 #' @export
-calc_khat.data.frame <- function(.data,
-                                 subject = "subject",
-                                 rater = "rater",
-                                 score = "score",
-                                 ...) {
-
+calc_khat.data.frame <- function(
+  .data,
+  subject = "subject",
+  rater = "rater",
+  score = "score",
+  ...
+) {
   # Create subject-by-rater matrix from .data
   srm <- create_srm(.data, subject = subject, rater = rater, score = score, ...)
 
@@ -229,7 +259,6 @@ calc_khat.data.frame <- function(.data,
 
   # Return khat
   khat
-
 }
 
 ## calc_q methods
@@ -237,7 +266,6 @@ calc_khat.data.frame <- function(.data,
 #' @method calc_q varde_srm
 #' @export
 calc_q.varde_srm <- function(srm) {
-
   # How many raters per subject?
   ks <- calc_ks(srm = srm)
 
@@ -283,17 +311,17 @@ calc_q.varde_srm <- function(srm) {
 
   # Return q
   q
-
 }
 
 #' @method calc_q data.frame
 #' @export
-calc_q.data.frame <- function(.data,
-                              subject = "subject",
-                              rater = "rater",
-                              score = "score",
-                              ...) {
-
+calc_q.data.frame <- function(
+  .data,
+  subject = "subject",
+  rater = "rater",
+  score = "score",
+  ...
+) {
   # Create subject-by-rater matrix from .data
   srm <- create_srm(.data, subject = subject, rater = rater, score = score, ...)
 
@@ -302,5 +330,4 @@ calc_q.data.frame <- function(.data,
 
   # Return q
   q
-
 }

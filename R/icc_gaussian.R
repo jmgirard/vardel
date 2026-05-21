@@ -13,9 +13,9 @@ calc_vardel_icc <- function(
 ) {
   if (is.null(srm)) {
     srm <- create_srm(
-      .data = .data, 
-      subject = subject, 
-      rater = rater, 
+      .data = .data,
+      subject = subject,
+      rater = rater,
       score = score
     )
   }
@@ -33,11 +33,14 @@ calc_vardel_icc <- function(
   khat <- calc_khat(srm)
   # Construct mixed-effects formula
   formula <- create_parse_glmmtmb(.data, subject, rater, score, 1)
-  safe_glmmTMB <- purrr::quietly(purrr::possibly(glmmTMB::glmmTMB, otherwise = NULL))
+  safe_glmmTMB <- purrr::quietly(purrr::possibly(
+    glmmTMB::glmmTMB,
+    otherwise = NULL
+  ))
   model_fit <- safe_glmmTMB(
     formula = formula,
-    REML = TRUE, 
-    data = .data 
+    REML = TRUE,
+    data = .data
   )
   if (is.null(model_fit$result)) {
     # we had an error!
@@ -55,7 +58,7 @@ calc_vardel_icc <- function(
     glmmTMB_vars <- glmmTMB::VarCorr(model_fitted)
     vs <- glmmTMB_vars$cond$ObjectID[1]
     vr <- glmmTMB_vars$cond$RaterID[1]
-    vsr <- sigma(model_fitted)^2 
+    vsr <- sigma(model_fitted)^2
     iccs <- c(
       vs / (vs + vr + vsr),
       vs / (vs + (vr + vsr) / khat),
@@ -68,23 +71,51 @@ calc_vardel_icc <- function(
     param_idx <- c(theta_idx, betad_idx)
     param_vcov <- full_vcov[param_idx, param_idx, drop = FALSE]
     param_vals <- model_fitted$fit$par[param_idx]
-    form_ak <- as.formula(paste0("~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + exp(x3)^2) / ", khat, "))"))
-    form_ck <- as.formula(paste0("~ exp(x1)^2 / (exp(x1)^2 + (exp(x3)^2 / ", khat, "))"))
-    se_a1 <- tryCatch(msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + exp(x3)^2), param_vals, param_vcov), error = function(e) NA)
-    se_ak <- tryCatch(msm::deltamethod(form_ak, param_vals, param_vcov), error = function(e) NA)
-    se_c1 <- tryCatch(msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + exp(x3)^2), param_vals, param_vcov), error = function(e) NA)
-    se_ck <- tryCatch(msm::deltamethod(form_ck, param_vals, param_vcov), error = function(e) NA)
+    form_ak <- as.formula(paste0(
+      "~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + exp(x3)^2) / ",
+      khat,
+      "))"
+    ))
+    form_ck <- as.formula(paste0(
+      "~ exp(x1)^2 / (exp(x1)^2 + (exp(x3)^2 / ",
+      khat,
+      "))"
+    ))
+    se_a1 <- tryCatch(
+      msm::deltamethod(
+        ~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + exp(x3)^2),
+        param_vals,
+        param_vcov
+      ),
+      error = function(e) NA
+    )
+    se_ak <- tryCatch(
+      msm::deltamethod(form_ak, param_vals, param_vcov),
+      error = function(e) NA
+    )
+    se_c1 <- tryCatch(
+      msm::deltamethod(
+        ~ exp(x1)^2 / (exp(x1)^2 + exp(x3)^2),
+        param_vals,
+        param_vcov
+      ),
+      error = function(e) NA
+    )
+    se_ck <- tryCatch(
+      msm::deltamethod(form_ck, param_vals, param_vcov),
+      error = function(e) NA
+    )
     se_vector <- c(se_a1, se_ak, se_c1, se_ck)
     safe_iccs <- pmin(pmax(iccs, 1e-5), 1 - 1e-5)
     logit_iccs <- qlogis(safe_iccs)
     se_logit <- se_vector / (safe_iccs * (1 - safe_iccs))
     lower_ci <- plogis(logit_iccs - (1.96 * se_logit))
     upper_ci <- plogis(logit_iccs + (1.96 * se_logit))
-    message <- length(model_fit$message) > 0 
-    warning <- length(model_fit$warning) > 0  
+    message <- length(model_fit$message) > 0
+    warning <- length(model_fit$warning) > 0
     error <- FALSE
   }
-  icc_names <- c("ICC(A,1)", "ICC(A,k)","ICC(C,1)", "ICC(C,k)")
+  icc_names <- c("ICC(A,1)", "ICC(A,k)", "ICC(C,1)", "ICC(C,k)")
   subject_var <- .data$OBJ_VAR[1]
   rater_var <- .data$RATER_VAR[1]
   out <- tibble::tibble(
