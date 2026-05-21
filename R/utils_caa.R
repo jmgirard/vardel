@@ -126,18 +126,6 @@ cat_vardel_adjusted <- function(.data,
 
   # Prepare empty results in case of errors
   n_approach <- length(approach)
-  out <- new_cai(
-    approach = approach,
-    observed = rep(NA_real_, n_approach),
-    expected = rep(NA_real_, n_approach),
-    adjusted = rep(NA_real_, n_approach),
-    boot_results = list(
-      t = matrix(NA, nrow = 1, ncol = 3 * n_approach),
-      t0 = rep(NA, 3 * n_approach)
-    ),
-    details = d,
-    call = match.call()
-  )
 
   # Warn about bootstrapping samples with less than 20 objects
   if (d$n_objects < 20 && bootstrap > 0 && warnings == TRUE) {
@@ -154,13 +142,11 @@ cat_vardel_adjusted <- function(.data,
     if (warnings == TRUE) {
       warning("Only a single category was observed or requested. Returning NA.\nHint: Try setting the possible categories explicitly with the categories argument")
     }
-    #return(out) why does this happen?
   }
   if (d$n_raters < 2) {
     if (warnings == TRUE) {
       warning("Only a single rater was observed. Returning NA.")
     }
-    #return(out) why does this happen? 
   }
 
   # Create function to perform bootstrapping
@@ -208,34 +194,17 @@ cat_vardel_adjusted <- function(.data,
       alpha_c = d$alpha_c
     )
 
-  # Construct cai class output object
-  # out <- new_cai(
-  #   approach = approach,
-  #   observed = boot_results$t0[seq(from = 1, to = length(approach) * 3, by = 3)],
-  #   expected = boot_results$t0[seq(from = 2, to = length(approach) * 3, by = 3)],
-  #   adjusted = boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)],
-  #   boot_results = boot_results,
-  #   details = d,
-  #   call = match.call()
-  # )
-
-  #observed, expected, adjusted 
-
-
   observed = boot_results$t0[seq(from = 1, to = length(approach) * 3, by = 3)]
   expected = boot_results$t0[seq(from = 2, to = length(approach) * 3, by = 3)]
   adjusted = boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)]
 
   kap <- c(observed[1], expected[1], adjusted[1]) #observed, expected, adjusted
-  sbp <- c(observed[1], expected[1], adjusted[1]) #observed, expected, adjusted
-
-  #kap <- boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)]
- # sbp <- boot_results$t0[seq(from = 3, to = length(approach) * 3, by = 3)][2]
+  sbp <- c(observed[2], expected[2], adjusted[2]) #observed, expected, adjusted
 
   res_caa <- tibble::tibble(
     method = c("kappa_obs", "kappa_exp", "kappa_adj"),
     icc = NA,
-    estimate = signif(kap, digits = 3),
+    estimate = kap,
     sigma_s = NA,
     sigma_r = NA,
     sigma_vsr = NA,  
@@ -245,12 +214,10 @@ cat_vardel_adjusted <- function(.data,
     message = "",
     warning = "",
     error = ""
-
-
   ) |> dplyr::add_row(
     method = c("s_bp_obs", "s_bp_exp", "s_bp_adj"),
     icc = NA, 
-    estimate = signif(sbp, digits = 3),
+    estimate = sbp,
     sigma_s = NA,
     sigma_r = NA,
     sigma_vsr = NA,  
@@ -309,7 +276,7 @@ prep_data_cat <- function(.data,
   n_cat_observed <- length(cat_observed)
 
   # If specified, get and count possible categories
-  if (is_null(categories)) {
+  if (is.null(categories)) {
     cat_possible <- cat_observed
     n_cat_possible <- n_cat_observed
   } else {
@@ -467,7 +434,7 @@ safe_boot.ci <- function(boot.out, level, type, index, ...) {
   } else if (type == "perc") {
     field <- "percent"
     elems <- 4:5
-  } else if (type == "basic") {
+  } else if (type == "basic") { 
     field <- "basic"
     elems <- 4:5
   } else if (type == "norm") {
@@ -492,148 +459,6 @@ safe_boot.ci <- function(boot.out, level, type, index, ...) {
   out
 }
 
-# new_cai -----------------------------------------------------------------
-
-# S3 Constructor for cai class
-new_cai <- function(approach = character(),
-                    observed = double(),
-                    expected = double(),
-                    adjusted = double(),
-                    boot_results = list(),
-                    details = list(),
-                    call = rlang::quo(),
-                    ...) {
-
-  new_s3_scalar(
-    approach = approach,
-    observed = observed,
-    expected = expected,
-    adjusted = adjusted,
-    boot_results = boot_results,
-    details = details,
-    call = call,
-    ...,
-    class = "agreement_cai"
-  )
-
-}
-
-# summary.agreement_cai ---------------------------------------------------
-
-# Summary method for objects of cai class
-#' @method summary agreement_cai
-#' @export
-summary.agreement_cai <- function(object,
-                                  digits = 3,
-                                  ci = TRUE,
-                                  ...) {
-
-  # Validate inputs
-  assertthat::assert_that(digits == 0 || assertthat::is.count(digits))
-  assertthat::assert_that(assertthat::is.flag(ci))
-
-  # Print function call and header
-  cat(
-    "\nCall:\n",
-    paste(deparse(object$call), sep = "\n", collapse = "\n"),
-    "\n\n",
-    "Objects = \t", object$details$n_objects,
-    "\nRaters = \t", object$details$n_raters,
-    "\nCategories = \t{", paste(object$details$categories, collapse = ", "), "}",
-    "\nWeighting = \t", object$details$weighting,
-    "\n\n",
-    "Chance-Adjusted Categorical Agreement with Bootstrapped CIs\n\n",
-    sep = ""
-  )
-
-  # Create matrix containing basic results
-  v <- c(object$observed, object$expected, object$adjusted)
-  m <- round(matrix(v, ncol = 3L), digits)
-  rownames(m) <- object$approach
-  colnames(m) <- c("Observed", "Expected", "Adjusted")
-
-  # Append Confidence Intervals for Adjusted Column if requested
-  if (ci == TRUE) {
-    ci <- round(
-      stats::confint(
-        object,
-        ...
-        )[seq(3, length(object$approach) * 3, by = 3), ],
-      digits
-    )
-    m <- cbind(m, ci)
-  }
-
-  # Print matrix
-  print(m, print.gap = 3L, na.print = "")
-  cat("\n")
-
-}
-
-# confint.agreement_cai ---------------------------------------------------
-
-#' Calculate confidence intervals for chance-adjusted agreement indexes
-#'
-#' Calculate confidence intervals for chance-adjusted agreement indexes using
-#' one of several approaches.
-#'
-#' @param object A chance-adjusted agreement or "cai" object.
-#' @param level A single real number between 0 and 1 that indicates the
-#'   confidence level or width of the confidence intervals.
-#' @param type A single string indicating which type of bootstrap confidence
-#'   interval to calculate. Options currently include "bca" for bias-corrected
-#'   and accelerated bootstrap CIs, "perc" for bootstrap percentile CIs, "basic"
-#'   for basic bootstrap CIs, and "norm" for normal approximation CIs.
-#' @param ... Further arguments to be passed to \code{boot::boot.ci()}.
-#' @method confint agreement_cai
-#' @export
-confint.agreement_cai <- function(object,
-                                  level = 0.95,
-                                  type = c("bca", "perc", "basic", "norm"),
-                                  ...) {
-
-  # Validate inputs
-  assertthat::assert_that(is.number(level), level > 0, level < 1)
-  type <- match.arg(type, several.ok = FALSE)
-
-  # Calculate CI bounds and store in list
-  ci_list <-
-    lapply(
-      1:ncol(object$boot_results$t),
-      function (i) safe_boot.ci(
-        object$boot_results,
-        level = level,
-        type = type,
-        index = i,
-        ...
-      )
-    )
-
-  # Convert list to matrix and add dimnames
-  out <- matrix(unlist(ci_list), ncol = 2, byrow = TRUE)
-  rownames(out) <-
-    paste0(
-      rep(object$approach, each = 3),
-      " ",
-      c("Observed", "Expected", "Adjusted")
-    )
-  colnames(out) <- c("lower", "upper")
-
-  out
-}
-
-# Create a new S3 class from a list
-new_s3_lst <- function(x, ..., class) {
-  stopifnot(is.list(x))
-  stopifnot(is.character(class))
-  structure(x, ..., class = class)
-}
-
-# Create a new S3 class from a scalar
-new_s3_scalar <- function(..., class) {
-  new_s3_lst(list(...), class = class)
-}
-
 # Redirect to the desired formula for percent observed agreement
 calc_agreement <- function(codes,
                            categories,
@@ -644,10 +469,6 @@ calc_agreement <- function(codes,
 
   if (formula == "objects") {
     calc_agreement_objects(codes, categories, weight_matrix)
-  } else if (formula == "pairs") {
-    calc_agreement_pairs(codes, categories, weight_matrix)
-  } else if (formula == "kripp") {
-    calc_agreement_kripp(codes, categories, weight_matrix)
   }
 }
 
@@ -681,13 +502,6 @@ calc_agreement_objects <- function(codes, categories, weight_matrix) {
 }
 
 
-
-############ CAA approach #1: Bennet's S/brennen prediger 
-
-#' @export
-cat_s <- function(.data, ...) {
-  cat_vardel_adjusted(.data, approach = "s", agreement = "objects", ...)
-}
 
 # Worker function to calculate the S score and its components
 calc_s <- function(codes, categories, weight_matrix, agreement, ...) {
@@ -728,11 +542,6 @@ calc_chance_s <- function(codes, categories, weight_matrix) {
 
 
 ######## CAA apporach #2
-
-#' @export
-cat_kappa <- function(.data, ...) {
-  cat_vardel_adjusted(.data, approach = "kappa", agreement = "objects", ...)
-}
 
 # Calculate the kappa coefficient and its components
 calc_kappa <- function(codes, categories, weight_matrix, agreement, ...) {

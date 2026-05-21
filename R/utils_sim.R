@@ -6,47 +6,31 @@
 #' you just set $k_{ratio} = X$.(default 5) 
 #' @return variances/effects
 #' @export
-generate_data_ORR<- function(n_raters,n_objects,
+generate_data_ORR<- function(n_raters, n_objects,
   target_icc, ORR, icc_type){
 
   # Obtain variances 
   sigma_sqr <- get_data_ORR(target_icc, ORR, n_raters, icc_type)
-
-  # sigma_sqr <- list(
-  #   var_object = 30,
-  #   var_rater = 0.2,
-  #   var_residual = 1.0
-  # )
-  
   # Generate effects 
   obj_effects   <- rnorm(
     n_objects, mean = 0, sd = sqrt(sigma_sqr$var_object)
   )
   rater_effects <- rnorm(
-    n_raters, mean =0, sd = sqrt(sigma_sqr$var_rater)
+    n_raters, mean = 0, sd = sqrt(sigma_sqr$var_rater)
   )
-
   # Create data structure # fully crossed designs only
   dat <- expand.grid(
     ObjectID = 1:n_objects,
     RaterID= 1:n_raters
   )
- # Generate scores 
-  data <- dat |> tibble::tibble() |>
-    dplyr::mutate(
-      u_i = obj_effects[ObjectID], #object effect
-      v_j = rater_effects[RaterID], #rater effect
-      Error = rnorm(dplyr::n(), mean=0, sd = sqrt(sigma_sqr$var_residual)),
-      OBJ_VAR = sigma_sqr$var_object,
-      RATER_VAR = sigma_sqr$var_rater, 
-      RES_VAR = sigma_sqr$var_residual, 
-      #implicate grand mean such that
-      # y_ij = mu + O_i + R_j + e_ij
-
-     # Score = grand_mean + Effect_O + Effect_R + Error
-    )
-
-  return(data)
+  # Generate scores (avoiding tidyverse for speed)
+  dat$u_i <- obj_effects[dat$ObjectID]
+  dat$v_j <- rater_effects[dat$RaterID]
+  dat$Error <- rnorm(nrow(dat), mean = 0, sd = sqrt(sigma_sqr$var_residual))
+  dat$OBJ_VAR <- sigma_sqr$var_object
+  dat$RATER_VAR <- sigma_sqr$var_rater
+  dat$RES_VAR <- sigma_sqr$var_residual
+  return(dat)
 }
 
 
@@ -72,11 +56,9 @@ get_data_ORR <- function(target_icc, ORR, n_raters, icc_type) {
     }
   
   #Set variance parameter components
-  var_error <- 1 # probit residual variance
-  #formaula: ICC = O / (O + ORR + E)
+  var_error <- 1
   if (icc_type == 1) {
     #utilize ICC(A,1) parameter formula
-    #var_object <- (target_icc * var_error) / (1-target_icc * (1 + ORR))
     var_object <- (target_icc * ORR * var_error) / (ORR - (target_icc * (ORR + 1)))
   } else if (icc_type == 2){
     #utilize ICC(A,K) parameter formula
@@ -91,8 +73,8 @@ get_data_ORR <- function(target_icc, ORR, n_raters, icc_type) {
 
 
   if (var_object <= 0) {
-  stop("Target ICC and Ratio are mathematically impossible with this error variance.")
-}
+    stop("Target ICC and Ratio are mathematically impossible with this error variance.")
+  }
   var_rater <- var_object / ORR
 
 
@@ -103,5 +85,4 @@ get_data_ORR <- function(target_icc, ORR, n_raters, icc_type) {
     var_residual = var_error)
   
   return(out)
-  }
-
+}
