@@ -68,32 +68,25 @@ calc_g_ordinal_icc <- function(
       vs / (vs + vsr / khat)
     )
     full_hessian <- model_fitted$Hessian
-    full_vcov <- solve(full_hessian)
-    st_idx <- grep("^ST", rownames(full_hessian))
-    st_vcov <- full_vcov[st_idx, st_idx, drop = FALSE]
-    var_corr <- ordinal::VarCorr(model_fitted)
-    st_vals <- c(
-      attr(var_corr[["ObjectID"]], "stddev"),
-      attr(var_corr[["RaterID"]], "stddev")
-    )
-    form_ak <- as.formula(paste0("~ x1^2 / (x1^2 + ((x2^2 + 1) / ", khat, "))"))
-    form_ck <- as.formula(paste0("~ x1^2 / (x1^2 + (1 / ", khat, "))"))
-    se_a1 <- tryCatch(
-      msm::deltamethod(~ x1^2 / (x1^2 + x2^2 + 1), st_vals, st_vcov),
-      error = function(e) NA
-    )
-    se_ak <- tryCatch(
-      msm::deltamethod(form_ak, st_vals, st_vcov),
-      error = function(e) NA
-    )
-    se_c1 <- tryCatch(
-      msm::deltamethod(~ x1^2 / (x1^2 + 1), st_vals, st_vcov),
-      error = function(e) NA
-    )
-    se_ck <- tryCatch(
-      msm::deltamethod(form_ck, st_vals, st_vcov),
-      error = function(e) NA
-    )
+    full_vcov <- tryCatch(solve(full_hessian), error = function(e) NULL)
+    se_a1 <- se_ak <- se_c1 <- se_ck <- NA_real_
+    if (!is.null(full_vcov)) {
+      st_idx <- grep("^ST", rownames(full_hessian))
+      if (length(st_idx) == 2) {
+        st_vcov <- full_vcov[st_idx, st_idx, drop = FALSE]
+        var_corr <- ordinal::VarCorr(model_fitted)
+        st_vals <- c(
+          attr(var_corr[["ObjectID"]], "stddev"),
+          attr(var_corr[["RaterID"]], "stddev")
+        )
+        form_ak <- as.formula(paste0("~ x1^2 / (x1^2 + ((x2^2 + 1) / ", khat, "))"))
+        form_ck <- as.formula(paste0("~ x1^2 / (x1^2 + (1 / ", khat, "))"))
+        se_a1 <- tryCatch(msm::deltamethod(~ x1^2 / (x1^2 + x2^2 + 1), st_vals, st_vcov), error = function(e) NA)
+        se_ak <- tryCatch(msm::deltamethod(form_ak, st_vals, st_vcov), error = function(e) NA)
+        se_c1 <- tryCatch(msm::deltamethod(~ x1^2 / (x1^2 + 1), st_vals, st_vcov), error = function(e) NA)
+        se_ck <- tryCatch(msm::deltamethod(form_ck, st_vals, st_vcov), error = function(e) NA)
+      }
+    }
     se_vector <- c(se_a1, se_ak, se_c1, se_ck)
     safe_iccs <- pmin(pmax(iccs, 1e-5), 1 - 1e-5)
     logit_iccs <- qlogis(safe_iccs)
