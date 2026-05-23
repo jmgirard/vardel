@@ -79,26 +79,30 @@ calc_g_binary_icc <- function(
       khat,
       "))"
     ))
-    se_a1 <- tryCatch(
-      msm::deltamethod(
-        ~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + 1),
-        theta_vals,
-        theta_vcov
-      ),
-      error = function(e) NA
+    se_a1 <- se_ak <- se_c1 <- se_ck <- NA_real_
+    full_vcov <- tryCatch(
+      glmmTMB::vcov(model_fitted, full = TRUE), 
+      error = function(e) NULL
     )
-    se_ak <- tryCatch(
-      msm::deltamethod(form_ak, theta_vals, theta_vcov),
-      error = function(e) NA
-    )
-    se_c1 <- tryCatch(
-      msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + 1), theta_vals, theta_vcov),
-      error = function(e) NA
-    )
-    se_ck <- tryCatch(
-      msm::deltamethod(form_ck, theta_vals, theta_vcov),
-      error = function(e) NA
-    )
+    if (!is.null(full_vcov)) {
+      theta_idx <- grep("^theta", names(model_fitted$fit$par))
+      if (length(theta_idx) == 2 && all(theta_idx <= ncol(full_vcov))) {
+        theta_vcov <- full_vcov[theta_idx, theta_idx, drop = FALSE]
+        theta_vals <- model_fitted$fit$par[theta_idx]
+        if (nrow(theta_vcov) == 2 && ncol(theta_vcov) == 2 && !any(is.na(theta_vcov))) {
+          form_ak <- as.formula(paste0(
+            "~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + 1) / ", khat, "))"
+          ))
+          form_ck <- as.formula(paste0(
+            "~ exp(x1)^2 / (exp(x1)^2 + (1 / ", khat, "))"
+          ))
+          se_a1 <- tryCatch(msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + 1), theta_vals, theta_vcov), error = function(e) NA)
+          se_ak <- tryCatch(msm::deltamethod(form_ak, theta_vals, theta_vcov), error = function(e) NA)
+          se_c1 <- tryCatch(msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + 1), theta_vals, theta_vcov), error = function(e) NA)
+          se_ck <- tryCatch(msm::deltamethod(form_ck, theta_vals, theta_vcov), error = function(e) NA)
+        }
+      }
+    }
     se_vector <- c(se_a1, se_ak, se_c1, se_ck)
     safe_iccs <- pmin(pmax(iccs, 1e-5), 1 - 1e-5)
     logit_iccs <- qlogis(safe_iccs)
