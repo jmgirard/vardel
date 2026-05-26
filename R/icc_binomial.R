@@ -65,23 +65,9 @@ calc_g_binary_icc <- function(
       vs / (vs + vsr),
       vs / (vs + vsr / khat)
     )
-    full_vcov <- vcov(model_fitted, full = TRUE)
-    theta_idx <- grep("^theta", names(model_fitted$fit$par))
-    theta_vcov <- full_vcov[theta_idx, theta_idx, drop = FALSE]
-    theta_vals <- model_fitted$fit$par[theta_idx]
-    form_ak <- as.formula(paste0(
-      "~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + 1) / ",
-      khat,
-      "))"
-    ))
-    form_ck <- as.formula(paste0(
-      "~ exp(x1)^2 / (exp(x1)^2 + (1 / ",
-      khat,
-      "))"
-    ))
     se_a1 <- se_ak <- se_c1 <- se_ck <- NA_real_
     full_vcov <- tryCatch(
-      glmmTMB::vcov(model_fitted, full = TRUE), 
+      glmmTMB::vcov(model_fitted, full = TRUE),
       error = function(e) NULL
     )
     if (!is.null(full_vcov)) {
@@ -89,17 +75,45 @@ calc_g_binary_icc <- function(
       if (length(theta_idx) == 2 && all(theta_idx <= ncol(full_vcov))) {
         theta_vcov <- full_vcov[theta_idx, theta_idx, drop = FALSE]
         theta_vals <- model_fitted$fit$par[theta_idx]
-        if (nrow(theta_vcov) == 2 && ncol(theta_vcov) == 2 && !any(is.na(theta_vcov))) {
+        if (
+          nrow(theta_vcov) == 2 &&
+            ncol(theta_vcov) == 2 &&
+            !any(is.na(theta_vcov))
+        ) {
           form_ak <- as.formula(paste0(
-            "~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + 1) / ", khat, "))"
+            "~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + 1) / ",
+            khat,
+            "))"
           ))
           form_ck <- as.formula(paste0(
-            "~ exp(x1)^2 / (exp(x1)^2 + (1 / ", khat, "))"
+            "~ exp(x1)^2 / (exp(x1)^2 + (1 / ",
+            khat,
+            "))"
           ))
-          se_a1 <- tryCatch(msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + 1), theta_vals, theta_vcov), error = function(e) NA)
-          se_ak <- tryCatch(msm::deltamethod(form_ak, theta_vals, theta_vcov), error = function(e) NA)
-          se_c1 <- tryCatch(msm::deltamethod(~ exp(x1)^2 / (exp(x1)^2 + 1), theta_vals, theta_vcov), error = function(e) NA)
-          se_ck <- tryCatch(msm::deltamethod(form_ck, theta_vals, theta_vcov), error = function(e) NA)
+          se_a1 <- tryCatch(
+            msm::deltamethod(
+              ~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + 1),
+              theta_vals,
+              theta_vcov
+            ),
+            error = function(e) NA
+          )
+          se_ak <- tryCatch(
+            msm::deltamethod(form_ak, theta_vals, theta_vcov),
+            error = function(e) NA
+          )
+          se_c1 <- tryCatch(
+            msm::deltamethod(
+              ~ exp(x1)^2 / (exp(x1)^2 + 1),
+              theta_vals,
+              theta_vcov
+            ),
+            error = function(e) NA
+          )
+          se_ck <- tryCatch(
+            msm::deltamethod(form_ck, theta_vals, theta_vcov),
+            error = function(e) NA
+          )
         }
       }
     }

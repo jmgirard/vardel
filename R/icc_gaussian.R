@@ -65,46 +65,56 @@ calc_vardel_icc <- function(
       vs / (vs + vsr),
       vs / (vs + vsr / khat)
     )
-    full_vcov <- vcov(model_fitted, full = TRUE)
-    theta_idx <- grep("^theta", names(model_fitted$fit$par))
-    betad_idx <- grep("^betadisp$", names(model_fitted$fit$par))
-    param_idx <- c(theta_idx, betad_idx)
-    param_vcov <- full_vcov[param_idx, param_idx, drop = FALSE]
-    param_vals <- model_fitted$fit$par[param_idx]
-    form_ak <- as.formula(paste0(
-      "~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + exp(x3)^2) / ",
-      khat,
-      "))"
-    ))
-    form_ck <- as.formula(paste0(
-      "~ exp(x1)^2 / (exp(x1)^2 + (exp(x3)^2 / ",
-      khat,
-      "))"
-    ))
-    se_a1 <- tryCatch(
-      msm::deltamethod(
-        ~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + exp(x3)^2),
-        param_vals,
-        param_vcov
-      ),
-      error = function(e) NA
+    se_a1 <- se_ak <- se_c1 <- se_ck <- NA_real_
+    full_vcov <- tryCatch(
+      glmmTMB::vcov(model_fitted, full = TRUE),
+      error = function(e) NULL
     )
-    se_ak <- tryCatch(
-      msm::deltamethod(form_ak, param_vals, param_vcov),
-      error = function(e) NA
-    )
-    se_c1 <- tryCatch(
-      msm::deltamethod(
-        ~ exp(x1)^2 / (exp(x1)^2 + exp(x3)^2),
-        param_vals,
-        param_vcov
-      ),
-      error = function(e) NA
-    )
-    se_ck <- tryCatch(
-      msm::deltamethod(form_ck, param_vals, param_vcov),
-      error = function(e) NA
-    )
+    if (!is.null(full_vcov)) {
+      theta_idx <- grep("^theta", names(model_fitted$fit$par))
+      betad_idx <- grep("^betadisp$", names(model_fitted$fit$par))
+      param_idx <- c(theta_idx, betad_idx)
+      if (all(param_idx <= ncol(full_vcov))) {
+        param_vcov <- full_vcov[param_idx, param_idx, drop = FALSE]
+        param_vals <- model_fitted$fit$par[param_idx]
+        if (!any(is.na(param_vcov))) {
+          form_ak <- as.formula(paste0(
+            "~ exp(x1)^2 / (exp(x1)^2 + ((exp(x2)^2 + exp(x3)^2) / ",
+            khat,
+            "))"
+          ))
+          form_ck <- as.formula(paste0(
+            "~ exp(x1)^2 / (exp(x1)^2 + (exp(x3)^2 / ",
+            khat,
+            "))"
+          ))
+          se_a1 <- tryCatch(
+            msm::deltamethod(
+              ~ exp(x1)^2 / (exp(x1)^2 + exp(x2)^2 + exp(x3)^2),
+              param_vals,
+              param_vcov
+            ),
+            error = function(e) NA
+          )
+          se_ak <- tryCatch(
+            msm::deltamethod(form_ak, param_vals, param_vcov),
+            error = function(e) NA
+          )
+          se_c1 <- tryCatch(
+            msm::deltamethod(
+              ~ exp(x1)^2 / (exp(x1)^2 + exp(x3)^2),
+              param_vals,
+              param_vcov
+            ),
+            error = function(e) NA
+          )
+          se_ck <- tryCatch(
+            msm::deltamethod(form_ck, param_vals, param_vcov),
+            error = function(e) NA
+          )
+        }
+      }
+    }
     se_vector <- c(se_a1, se_ak, se_c1, se_ck)
     safe_iccs <- pmin(pmax(iccs, 1e-5), 1 - 1e-5)
     logit_iccs <- qlogis(safe_iccs)
