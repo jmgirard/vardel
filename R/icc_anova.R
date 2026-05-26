@@ -54,7 +54,16 @@ calc_aov_icc <- function(
     error <- TRUE
   } else {
     model_fitted <- model_fit$result
-    aov_mod <- as.data.frame(anova(model_fitted))
+    aov_mod <- as.data.frame(
+      withCallingHandlers(
+        anova(model_fitted),
+        warning = function(w) {
+          if (grepl("essentially perfect fit", w$message)) {
+            invokeRestart("muffleWarning")
+          }
+        }
+      )
+    )
     MSr <- aov_mod["RaterID", ]$`Mean Sq`
     MSo <- aov_mod["ObjectID", ]$`Mean Sq`
     MSe <- aov_mod["Residuals", ]$`Mean Sq`
